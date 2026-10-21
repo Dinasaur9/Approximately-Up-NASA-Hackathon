@@ -1,0 +1,47 @@
+.lander {
+  position: relative;
+  display: inline-block;
+}
+
+.lander-canvas {
+  display: block;
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.lander-controls {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.lander-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+}
+
+.lander-overlay h2 {
+  color: #fff;
+}
+
+.lander-overlay button {
+  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.lander-overlay button:hover {
+  border-color: var(--accent-border);
+}
