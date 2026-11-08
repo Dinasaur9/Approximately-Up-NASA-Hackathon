@@ -1,0 +1,65 @@
+.outpost {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 32px 24px;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.outpost *, .outpost *::before, .outpost *::after { box-sizing: border-box; }
+.outpost .outpost-header { display: grid; gap: 14px; }
+.outpost h1 { margin: 0; font-size: clamp(24px, 4vw, 36px); line-height: 1.4; overflow-wrap: anywhere; }
+.outpost h2 { font-family: var(--mono); font-size: 14px; line-height: 1.5; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px; }
+.outpost p { line-height: 1.6; }
+.outpost .outpost-kicker { color: var(--nasa-red); font: 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: 0.1em; }
+.outpost .outpost-clock { font-family: var(--mono); color: var(--text-h); }
+.outpost progress { width: 100%; height: 8px; accent-color: var(--nasa-blue-bright); }
+.outpost .outpost-resources { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.outpost .outpost-panel { min-width: 0; background: rgba(11, 17, 32, 0.92); border: 1px solid var(--border); border-top: 2px solid var(--nasa-blue-bright); padding: 20px; }
+.outpost .outpost-resource { display: flex; flex-direction: column; gap: 8px; }
+.outpost .outpost-resource h2 { margin: 0; }
+.outpost .outpost-value { color: var(--text-h); font: 28px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+.outpost .outpost-value span { font-size: 13px; }
+.outpost meter { width: 100%; height: 14px; accent-color: var(--nasa-blue-bright); }
+.outpost .outpost-caption { font-size: 13px; margin-top: 10px; }
+.outpost .outpost-warning { border-top-color: var(--nasa-red); }
+.outpost .outpost-warning-text { color: #fdbb9a; font-size: 14px; }
+.outpost .outpost-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.outpost .outpost-controls { padding: 0; margin: 0; border: 0; display: grid; gap: 12px; min-width: 0; }
+.outpost legend { font-size: 13px; margin-bottom: 12px; }
+.outpost .outpost-control { display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: var(--info-bg); cursor: pointer; }
+.outpost input { width: 20px; height: 20px; margin: 3px 0 0; flex-shrink: 0; accent-color: var(--nasa-blue-bright); }
+.outpost .outpost-control strong { color: var(--text-h); font-size: 14px; }
+.outpost small { display: block; font-size: 12px; line-height: 1.6; }
+.outpost .outpost-control:has(input:disabled) { opacity: 0.65; cursor: default; }
+.outpost .outpost-callout { padding: 12px; margin-top: 12px; background: var(--info-bg); border-left: 3px solid var(--info); font-size: 14px; color: var(--text-h); }
+.outpost .outpost-forecast { font-family: var(--mono); color: var(--text-h); margin-bottom: 10px; }
+.outpost .outpost-readings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin: 16px 0; font-size: 14px; }
+.outpost .outpost-readings div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.outpost dd { margin: 0; color: var(--text-h); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.outpost .outpost-notes { padding-left: 20px; margin: 12px 0 0; font-size: 14px; line-height: 1.7; }
+.outpost .outpost-notes li + li { margin-top: 6px; }
+.outpost .outpost-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.outpost button { padding: 12px 18px; font: 13px/1.5 var(--mono); text-transform: uppercase; color: var(--text-h); background: var(--info-bg); border: 1px solid var(--info-border); cursor: pointer; }
+.outpost button:hover:not(:disabled) { background: var(--nasa-blue); }
+.outpost .outpost-primary { background: var(--nasa-red); border-color: var(--nasa-red); color: var(--bg-deep); }
+.outpost button:disabled { opacity: 0.5; cursor: not-allowed; }
+.outpost button:focus-visible, .outpost input:focus-visible, .outpost summary:focus-visible { outline: 2px solid var(--text-h); outline-offset: 4px; }
+.outpost summary { cursor: pointer; color: var(--text-h); font-family: var(--mono); font-size: 14px; }
+.outpost .outpost-result { border-top-width: 4px; }
+
+@media (max-width: 700px) {
+  .outpost { padding: 24px 14px; }
+  .outpost .outpost-columns, .outpost .outpost-readings { grid-template-columns: 1fr; }
+  .outpost .outpost-panel { padding: 16px; }
+}
+
+@media (max-width: 400px) {
+  .outpost .outpost-resources { grid-template-columns: 1fr; }
+  .outpost .outpost-actions button { width: 100%; }
+}

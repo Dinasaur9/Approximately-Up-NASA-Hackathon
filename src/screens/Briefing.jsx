@@ -49,7 +49,7 @@ function CardIcon({ name }) {
   )
 }
 
-function Briefing({ onNext }) {
+function Briefing({ onNext, onOutpost, onExplore }) {
   return (
     <section className="screen briefing">
       <div className="briefing-hero">
@@ -148,10 +148,18 @@ function Briefing({ onNext }) {
         cancel velocity before the ground does it for you.
       </p>
 
-      <div className="screen-nav">
+      <div className="screen-nav" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
         <button type="button" className="screen-nav-primary" onClick={onNext}>
           Start Training
         </button>
+        {onOutpost && (
+          <button type="button" onClick={onOutpost}>
+            Lunar Outpost Management
+          </button>
+        )}
+        {onExplore && (
+          <button type="button" onClick={onExplore}>Explore Lunar Outpost (3D)</button>
+        )}
       </div>
     </section>
   )
