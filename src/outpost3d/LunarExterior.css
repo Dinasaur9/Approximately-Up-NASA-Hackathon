@@ -23,4 +23,11 @@
 .lunar-exterior .equipment-dialog dd { margin: 6px 0 0; }
 .lunar-exterior .equipment-note { color: #b2c4d4; margin: 20px 0; }
 .lunar-exterior .equipment-dialog button { width: 100%; }
+.lunar-exterior .equipment-dialog button + button { margin-top: 12px; }
+.lunar-exterior .habitat-transition { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: #02060c; color: #b4d5ec; font: 13px/1.8 var(--mono); text-align: center; padding: 20px; }
+.lunar-exterior .habitat-transition-out { animation: habitat-fade-out 250ms ease-in both; }
+.lunar-exterior .habitat-transition-in { animation: habitat-fade-in 300ms ease-out both; }
+@keyframes habitat-fade-out { from { opacity: 0; } to { opacity: 1; } }
+@keyframes habitat-fade-in { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lunar-exterior .habitat-transition { animation: none; } }
 @media (max-width: 600px) { .lunar-exterior .exterior-hud { padding: 12px; align-items: flex-start; } .lunar-exterior .exterior-hud button { max-width: 110px; padding: 8px; } .lunar-exterior .exterior-entry { padding: 18px; } }

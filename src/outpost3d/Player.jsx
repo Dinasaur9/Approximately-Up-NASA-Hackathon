@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
 import { Vector3 } from 'three'
-import { canWalk, groundHeight, EYE_HEIGHT } from './world.js'
+import { EYE_HEIGHT } from './world.js'
+import { sceneProfiles } from './interior.js'
 
-export default function Player({ enterButtonRef, onLockChange, onError, paused = false }) {
+export default function Player({ enterButtonRef, onLockChange, onError, paused = false, profile = sceneProfiles.initial, canWalkOverride }) {
   const { camera, gl } = useThree()
   const keys = useRef(new Set())
   const controlRef = useRef(null)
@@ -12,8 +13,6 @@ export default function Player({ enterButtonRef, onLockChange, onError, paused =
   const right = useRef(new Vector3())
 
   useEffect(() => {
-    camera.position.set(0, groundHeight(0, 16) + EYE_HEIGHT, 16)
-    camera.lookAt(0, 2, -8)
     const controls = new PointerLockControls(camera, gl.domElement)
     controls.minPolarAngle = 0.15
     controls.maxPolarAngle = Math.PI - 0.15
@@ -65,6 +64,13 @@ export default function Player({ enterButtonRef, onLockChange, onError, paused =
   }, [camera, gl, enterButtonRef, onLockChange, onError])
 
   useEffect(() => {
+    keys.current.clear()
+    const [x, z] = profile.spawn
+    camera.position.set(x, profile.groundHeight(x, z) + EYE_HEIGHT, z)
+    camera.lookAt(...profile.lookAt)
+  }, [camera, profile])
+
+  useEffect(() => {
     if (controlRef.current) controlRef.current.enabled = !paused
     if (paused) keys.current.clear()
   }, [paused])
@@ -84,9 +90,10 @@ export default function Player({ enterButtonRef, onLockChange, onError, paused =
     const dx = (forward.current.x * longitudinal + right.current.x * lateral) * step
     const dz = (forward.current.z * longitudinal + right.current.z * lateral) * step
     // Separate axis resolution lets the astronaut slide along building walls.
-    if (canWalk(activeCamera.position.x + dx, activeCamera.position.z)) activeCamera.position.x += dx
-    if (canWalk(activeCamera.position.x, activeCamera.position.z + dz)) activeCamera.position.z += dz
-    activeCamera.position.y = groundHeight(activeCamera.position.x, activeCamera.position.z) + EYE_HEIGHT
+    const walkable = canWalkOverride || profile.canWalk
+    if (walkable(activeCamera.position.x + dx, activeCamera.position.z)) activeCamera.position.x += dx
+    if (walkable(activeCamera.position.x, activeCamera.position.z + dz)) activeCamera.position.z += dz
+    activeCamera.position.y = profile.groundHeight(activeCamera.position.x, activeCamera.position.z) + EYE_HEIGHT
   })
   return null
 }
