@@ -6,9 +6,13 @@ import Interactions from './Interactions.jsx'
 import EquipmentPanel from './EquipmentPanel.jsx'
 import HabitatInterior from './HabitatInterior.jsx'
 import GreenhouseInterior from './GreenhouseInterior.jsx'
-import { greenhouseInteractions, selectGreenhouseInteraction } from './greenhouse.js'
-import { interiorInteractions, sceneProfiles, transitionDestination, createDoorState, canWalkInterior, selectInteriorInteraction, toggleDoor } from './interior.js'
-import { interactables } from './interactions.js'
+import InventoryPanel from './InventoryPanel.jsx'
+import Collectibles from './Collectibles.jsx'
+import { collectItem, createInventorySession } from './inventory.js'
+import { collectibles, selectCollectibleInteraction } from './collectibles.js'
+import { selectGreenhouseInteraction } from './greenhouse.js'
+import { sceneProfiles, transitionDestination, createDoorState, canWalkInterior, selectInteriorInteraction, toggleDoor } from './interior.js'
+import { interactables, selectInteraction } from './interactions.js'
 import './LunarExterior.css'
 
 class SceneBoundary extends Component {
@@ -30,19 +34,48 @@ export default function LunarExterior({ onBack }) {
   const [transition, setTransition] = useState(null)
   const [doorState, setDoorState] = useState(createDoorState)
   const [doorNotice, setDoorNotice] = useState('')
+  const [inventoryOpen, setInventoryOpen] = useState(false)
+  const [inventorySession, setInventorySession] = useState(createInventorySession)
   const title = location === 'interior' ? 'Lunar Habitat Interior' : location === 'greenhouse' ? 'Lunar Greenhouse Interior' : 'Lunar Outpost Exterior'
   const interiorWalkable = useCallback((x, z) => canWalkInterior(x, z, doorState), [doorState])
   const interiorSelection = useCallback((x, z) => selectInteriorInteraction(x, z, doorState), [doorState])
+  const resolveInteraction = useCallback((x, z) => {
+    const base = location === 'interior' ? interiorSelection(x, z)
+      : location === 'greenhouse' ? selectGreenhouseInteraction(x, z) : selectInteraction(x, z, interactables)
+    return selectCollectibleInteraction(x, z, location, inventorySession.collectedIds, base)
+  }, [location, interiorSelection, inventorySession.collectedIds])
   const transitionGuard = useRef(false)
-  const blocked = Boolean(inspecting || transition)
+  const blocked = Boolean(inspecting || transition || inventoryOpen)
   const enterButtonRef = useRef(null)
   const onLockChange = useCallback((value) => { setLocked(value); if (value) { setError(''); setHasExplored(true) } }, [])
   const onError = useCallback((message) => setError(message), [])
   const closeInspection = useCallback(() => {
     setInspecting(null)
   }, [])
+  const closeInventory = useCallback(() => setInventoryOpen(false), [])
+  useEffect(() => {
+    const toggleInventory = (event) => {
+      if (event.code !== 'KeyI' || event.repeat || event.ctrlKey || event.metaKey || event.altKey || inspecting || transition) return
+      if (event.target.closest?.('input, textarea, select, [contenteditable="true"]')) return
+      event.preventDefault()
+      if (!inventoryOpen && document.pointerLockElement) document.exitPointerLock()
+      setInventoryOpen((open) => !open)
+    }
+    window.addEventListener('keydown', toggleInventory)
+    return () => window.removeEventListener('keydown', toggleInventory)
+  }, [inventoryOpen, inspecting, transition])
+  useEffect(() => {
+    if (!inventorySession.notification) return
+    const timer = setTimeout(() => setInventorySession((current) => ({ ...current, notification: '' })), 5000)
+    return () => clearTimeout(timer)
+  }, [inventorySession.notification])
   const interact = useCallback((entry, position) => {
     if (transitionGuard.current) return
+    if (entry.action === 'collect') {
+      const object = collectibles.find((candidate) => candidate.id === entry.id && candidate.location === location)
+      if (object) setInventorySession((current) => collectItem(current, object))
+      return
+    }
     if (entry.action === 'door' && location === 'interior') {
       const next = toggleDoor(doorState, entry.id, position.x, position.z)
       setDoorState(next)
@@ -83,8 +116,9 @@ export default function LunarExterior({ onBack }) {
       <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 70, near: 0.1, far: 350 }}
         fallback={<p className="exterior-fallback">WebGL is unavailable. Use a browser with hardware acceleration enabled.</p>}>
         {location === 'interior' ? <HabitatInterior doorState={doorState} /> : location === 'greenhouse' ? <GreenhouseInterior /> : <Environment />}
+        <Collectibles location={location} collectedIds={inventorySession.collectedIds} />
         <Player enterButtonRef={enterButtonRef} onLockChange={onLockChange} onError={onError} paused={blocked} profile={profile} canWalkOverride={location === 'interior' ? interiorWalkable : undefined} />
-        <Interactions blocked={blocked} onNearby={setNearby} onInspect={interact} entries={location === 'interior' ? interiorInteractions : location === 'greenhouse' ? greenhouseInteractions : interactables} resolveInteraction={location === 'interior' ? interiorSelection : location === 'greenhouse' ? selectGreenhouseInteraction : undefined} />
+        <Interactions blocked={blocked} onNearby={setNearby} onInspect={interact} resolveInteraction={resolveInteraction} />
       </Canvas>
     </SceneBoundary>
     <header className="exterior-hud">
@@ -102,8 +136,10 @@ export default function LunarExterior({ onBack }) {
     {locked && <div className="exterior-crosshair" aria-hidden="true">+</div>}
     {locked && nearby && !blocked && <p className="exterior-prompt" role="status">Press E — {nearby.prompt || `Inspect ${nearby.name}`}{nearby.action === 'door' && doorNotice && <><br />{doorNotice}</>}</p>}
     {inspecting && <EquipmentPanel equipment={inspecting} onClose={closeInspection} onAction={panelAction} context={location === 'interior' ? 'Habitat station' : location === 'greenhouse' ? 'Greenhouse station' : 'Surface equipment'} />}
+    {inventoryOpen && <InventoryPanel inventory={inventorySession.inventory} onClose={closeInventory} />}
+    {inventorySession.notification && <p className="inventory-notification" role="status">{inventorySession.notification}</p>}
     {transition && <div className={`habitat-transition habitat-transition-${transition.phase}`} role="status">Cycling airlock… {transition.destination === 'interior' ? 'Entering habitat' : transition.destination === 'greenhouse' ? 'Entering greenhouse' : 'Returning to lunar surface'}</div>}
-    <footer className="exterior-instructions">{locked ? 'EXPLORING' : 'PAUSED'} · WASD walk · Mouse look · Shift faster · E inspect · Esc release<br />
+    <footer className="exterior-instructions">{locked ? 'EXPLORING' : 'PAUSED'} · WASD walk · Mouse look · Shift faster · E interact · I inventory · Esc release<br />
       {location === 'interior' ? 'Habitat 01 / Interior' : location === 'greenhouse' ? 'Greenhouse 01 / Interior' : 'Lunar surface / Exterior'} · Resource simulation runs separately</footer>
   </section>
 }

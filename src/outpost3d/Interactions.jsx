@@ -14,7 +14,7 @@ export default function Interactions({ blocked, onNearby, onInspect, entries = i
       const selected = resolveInteraction ? resolveInteraction(camera.position.x, camera.position.z) : selectInteraction(camera.position.x, camera.position.z, entries)
       if (!selected) return
       event.preventDefault()
-      if (selected.action !== 'door') {
+      if (!['door', 'collect'].includes(selected.action)) {
         opening.current = true
         document.exitPointerLock()
       }
