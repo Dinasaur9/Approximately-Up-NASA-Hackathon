@@ -6,7 +6,7 @@ import Equipment from './Equipment.jsx'
 import LandedSpacecraft from './LandedSpacecraft.jsx'
 import { groundHeight, canWalk } from './world.js'
 
-export default function Environment() {
+export default function Environment({ solarOperational = false }) {
   const terrain = useMemo(() => {
     const geometry = new PlaneGeometry(190, 190, 180, 180)
     geometry.rotateX(-Math.PI / 2)
@@ -34,7 +34,7 @@ export default function Environment() {
       <icosahedronGeometry args={[1, 0]} /><meshStandardMaterial color={i % 2 ? '#626565' : '#96948d'} roughness={1} />
     </mesh>)}
     <Structures />
-    <Equipment />
+    <Equipment solarOperational={solarOperational} />
     <LandedSpacecraft />
     {Array.from({ length: 7 }, (_, i) => <group key={i} position={[i % 2 ? -2.5 : 2.5, groundHeight(0, i * 2), i * 2]}>
       <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[0.045, 0.06, 0.5, 6]} /><meshStandardMaterial color="#a0a8b5" /></mesh>

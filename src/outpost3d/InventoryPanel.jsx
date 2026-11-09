@@ -23,7 +23,7 @@ export default function InventoryPanel({ inventory, onClose }) {
       <p>{item?.description || 'Collect equipment in the world with E to fill a slot.'}</p>
       {item && <p>{item.maxStack === 1 ? 'Non-stackable' : `Stack limit: ${item.maxStack}`}</p>}
     </section>
-    <p className="equipment-note">Use mission equipment at the Life-Support Console. Inventory remains separate from the resource simulation.</p>
+    <p className="equipment-note">Use mission equipment at the Life-Support Console or solar station. Inventory remains separate from the resource simulation.</p>
     <button type="button" autoFocus onClick={onClose}>Close Inventory</button>
   </dialog>
 }

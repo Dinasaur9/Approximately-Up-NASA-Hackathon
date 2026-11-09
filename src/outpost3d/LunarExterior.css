@@ -56,6 +56,9 @@
 }
 .lunar-exterior .mission-maintenance button:disabled { opacity: 0.5; cursor: not-allowed; }
 .lunar-exterior .mission-status { margin-top: 14px; color: #b7ddf2; font-family: var(--mono); }
+.lunar-exterior .mission-selection { display: grid; gap: 8px; font: 13px/1.6 var(--mono); }
+.lunar-exterior .mission-selection button + button { margin-top: 0; }
+.lunar-exterior .mission-selection button[aria-pressed="true"] { border-color: #a8ccee; background: #243950; }
 .lunar-exterior .mission-objectives { padding-left: 20px; font-size: 14px; line-height: 1.8; }
 .lunar-exterior .inventory-icon { font-size: 28px; line-height: 1; color: #a5d4ec; }
 .lunar-exterior .inventory-description { padding: 14px; background: var(--info-bg); border-left: 3px solid var(--info); }

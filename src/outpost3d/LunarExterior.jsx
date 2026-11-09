@@ -13,7 +13,7 @@ import MissionPanel from './MissionPanel.jsx'
 import MissionEvents from './MissionEvents.jsx'
 import ControlsPanel from './ControlsPanel.jsx'
 import { dismissIntroduction, getExplorationOverlay } from './explorationOverlay.js'
-import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS } from './missions.js'
+import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID } from './missions.js'
 import { ITEM_TYPES } from './inventory.js'
 import { selectGreenhouseInteraction } from './greenhouse.js'
 import { sceneProfiles, transitionDestination, createDoorState, canWalkInterior, selectInteriorInteraction, toggleDoor } from './interior.js'
@@ -45,10 +45,14 @@ export default function LunarExterior({ onBack }) {
   const [inventorySession, dispatch] = useReducer(explorationReducer, undefined, createExplorationSession)
   const [missionOpen, setMissionOpen] = useState(false)
   const [inspectionContext, setInspectionContext] = useState(null)
-  const mission = inventorySession.mission
+  const mission = inventorySession.missions[MISSION_ID]
+  const solarMission = inventorySession.missions[SOLAR_MISSION_ID]
+  const solarOperational = solarMission.status === 'completed'
+  const solarMissing = missingRepairItems(inventorySession.inventory, SOLAR_MISSION_ID)
   const operational = mission.status === 'completed'
   const missing = missingRepairItems(inventorySession.inventory)
-  const nextObjective = getMissionProgress(mission).find((o) => !o.completed)
+  const hudMission = Object.values(inventorySession.missions).find((entry) => entry.status !== 'completed') || solarMission
+  const nextObjective = getMissionProgress(hudMission).find((o) => !o.completed)
   const title = location === 'interior' ? 'Lunar Habitat Interior' : location === 'greenhouse' ? 'Lunar Greenhouse Interior' : 'Lunar Outpost Exterior'
   const interiorWalkable = useCallback((x, z) => canWalkInterior(x, z, doorState), [doorState])
   const interiorSelection = useCallback((x, z) => selectInteriorInteraction(x, z, doorState), [doorState])
@@ -117,7 +121,9 @@ export default function LunarExterior({ onBack }) {
     if (!destination) {
       panelGate.current = 'inspection'
       setDismissedIntroductions((current) => dismissIntroduction(current, location))
-      setInspectionContext({ location, consoleId: entry.id, x: position?.x, z: position?.z, doorState })
+      const context = { location, consoleId: entry.id, x: position?.x, z: position?.z, doorState }
+      setInspectionContext(context)
+      dispatch({ type: 'inspect', context })
       setInspecting(entry)
       return
     }
@@ -155,7 +161,7 @@ export default function LunarExterior({ onBack }) {
     <SceneBoundary>
       <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 70, near: 0.1, far: 350 }}
         fallback={<p className="exterior-fallback">WebGL is unavailable. Use a browser with hardware acceleration enabled.</p>}>
-        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior /> : <Environment />}
+        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior /> : <Environment solarOperational={solarOperational} />}
         <Collectibles location={location} collectedIds={inventorySession.collectedIds} />
         <Player enterButtonRef={enterButtonRef} onLockChange={onLockChange} onError={onError} paused={blocked} profile={profile} canWalkOverride={location === 'interior' ? interiorWalkable : undefined} />
         <Interactions blocked={blocked} onNearby={setNearby} onInspect={interact} resolveInteraction={resolveInteraction} />
@@ -203,14 +209,27 @@ export default function LunarExterior({ onBack }) {
         </div>}
         <p className="maintenance-disclaimer">Inspecting the console does not change resources. Completing the repair updates mission maintenance state and consumes one inventory filter. The resource simulation remains separate: oxygen quantities and simulation time do not change.</p>
       </section>}
+      {inspecting.id === 'solar' && location === 'exterior' && <section className="mission-maintenance" aria-live="polite">
+        <h3>Solar equipment: {solarOperational ? 'Operational' : 'Power Cell Replacement Required'}</h3>
+        <p>{solarOperational ? 'Spare Power Cell installed. Mission 02 complete.' : 'Replace the control unit’s power cell to complete the maintenance exercise.'}</p>
+        <div className="maintenance-requirements">
+          <h4>Required equipment</h4>
+          <ul><li><span>Spare Power Cell ×1<small>Consumed on installation</small></span><strong>{solarOperational ? 'Installed' : solarMissing.length ? 'Missing' : 'Available'}</strong></li></ul>
+        </div>
+        {!solarOperational && <div className="maintenance-action">
+          {solarMissing.length > 0 && <p>Missing: {solarMissing.join(', ')}. Collect the cell near the solar station.</p>}
+          <button type="button" disabled={!canRepairSystem(inventorySession, inspectionContext, SOLAR_MISSION_ID)} onClick={() => dispatch({ type: 'install-cell', context: inspectionContext })}>Install Power Cell</button>
+        </div>}
+        <p className="maintenance-disclaimer">Installation changes mission maintenance state and consumes one inventory cell. The resource simulation’s battery level, solar generation and clock remain unchanged.</p>
+      </section>}
     </EquipmentPanel>}
     {inventoryOpen && <InventoryPanel inventory={inventorySession.inventory} onClose={closeInventory} />}
-    {missionOpen && <MissionPanel mission={mission} onClose={closeMissions} />}
+    {missionOpen && <MissionPanel missions={inventorySession.missions} onClose={closeMissions} />}
     {helpOpen && <ControlsPanel onClose={closeHelp} />}
     {inventorySession.notification && <p className="inventory-notification" role="status">{inventorySession.notification}</p>}
     {transition && <div className={`habitat-transition habitat-transition-${transition.phase}`} role="status">Cycling airlock… {transition.destination === 'interior' ? 'Entering habitat' : transition.destination === 'greenhouse' ? 'Entering greenhouse' : 'Returning to lunar surface'}</div>}
     <footer className="exterior-instructions">{locked ? 'EXPLORING' : 'PAUSED'} · WASD walk · Mouse look · Shift faster · E interact · I inventory · M missions · H help · Esc release<br />
-      Mission 01: {operational ? 'Completed — filtration restored' : nextObjective?.label} · {mission.status.replaceAll('-', ' ')}<br />
+      {MISSIONS[hudMission.id].title}: {nextObjective?.label || 'All missions completed'} · {hudMission.status.replaceAll('-', ' ')}<br />
       {location === 'interior' ? 'Habitat 01 / Interior' : location === 'greenhouse' ? 'Greenhouse 01 / Interior' : 'Lunar surface / Exterior'} · Resource simulation runs separately</footer>
   </section>
 }

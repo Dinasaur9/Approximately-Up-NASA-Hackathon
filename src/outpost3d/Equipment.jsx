@@ -34,7 +34,7 @@ export function Beacon({ position, color = '#80e9dc' }) {
   return <mesh position={position}><sphereGeometry args={[0.075, 8, 8]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} /></mesh>
 }
 
-export default function Equipment() {
+export default function Equipment({ solarOperational = false }) {
   return <>
     <group position={[7, groundHeight(7, 0), 0]}>
       <Part position={[0, 1, 0]} size={[2, 2, 2]} color="#b9c7cb" />
@@ -45,7 +45,7 @@ export default function Equipment() {
       <Beacon position={[0.7, 1.7, 1.12]} />
     </group>
     <group position={[-15, groundHeight(-15, 3), 3]}>
-      {[-1.3, 0, 1.3].map((x) => <group key={x}><Part position={[x, 0.75, 0]} size={[1, 1.5, 1.2]} color="#354c68" /><Part position={[x, 0.75, 0.62]} size={[0.65, 0.8, 0.06]} color="#17232f" /><Beacon position={[x, 1.25, 0.68]} /></group>)}
+      {[-1.3, 0, 1.3].map((x) => <group key={x}><Part position={[x, 0.75, 0]} size={[1, 1.5, 1.2]} color="#354c68" /><Part position={[x, 0.75, 0.62]} size={[0.65, 0.8, 0.06]} color="#17232f" /><Beacon position={[x, 1.25, 0.68]} color={solarOperational ? '#7de0b4' : '#ffc16e'} /></group>)}
       <Label text="POWER / BATTERY BANK" position={[0, 1.9, 0.7]} width={3} />
     </group>
     <group position={[20, groundHeight(20, 4), 4]}>

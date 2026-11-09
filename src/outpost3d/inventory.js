@@ -3,7 +3,7 @@ export const ITEM_TYPES = Object.freeze({
   filter: Object.freeze({ name: 'Replacement Oxygen Filter', icon: '▤', maxStack: 3, description: 'A sealed replacement filter cartridge for atmosphere-handling equipment. Mission 01 consumes one cartridge when repairing filtration at the Life-Support Console.' }),
   tool: Object.freeze({ name: 'Repair Tool', icon: '⚒', maxStack: 1, description: 'A reusable maintenance tool. Each tool occupies its own slot. Required for Mission 01 repair and retained afterward.' }),
   nutrient: Object.freeze({ name: 'Nutrient Sample', icon: '◈', maxStack: 5, description: 'A labeled sample of hydroponic nutrients for later research. It does not change greenhouse production.' }),
-  cell: Object.freeze({ name: 'Spare Power Cell', icon: '▣', maxStack: 2, description: 'A portable spare cell held for future maintenance tasks. It does not charge the outpost battery.' }),
+  cell: Object.freeze({ name: 'Spare Power Cell', icon: '▣', maxStack: 2, description: 'A portable spare cell. Mission 02 consumes one cell during exterior solar station maintenance. It does not charge the resource-model battery.' }),
 })
 export const INVENTORY_SLOTS = 6
 

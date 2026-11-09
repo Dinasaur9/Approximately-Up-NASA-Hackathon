@@ -1,19 +1,39 @@
 import { createInventorySession, collectItem, ownsItem, removeItem, ITEM_TYPES } from './inventory.js'
+import { canWalk } from './world.js'
+import { interactables } from './interactions.js'
 import { collectibles } from './collectibles.js'
 import { rooms, canWalkInterior, selectInteriorInteraction } from './interior.js'
 
 export const MISSION_ID = 'restore-oxygen-filtration'
+export const SOLAR_MISSION_ID = 'restore-solar-power'
 export const MISSIONS = {
   [MISSION_ID]: {
     id: MISSION_ID, title: 'Mission 01 — Restore Oxygen Filtration',
     description: 'Recover a Repair Tool and Replacement Oxygen Filter outside, enter the habitat, and restore the filtration equipment at the Life-Support Console. This training repair does not change resource-model oxygen or time.',
+    prerequisites: ['habitat', 'life-support'],
+    completionEvents: ['repair'],
+    completionMessage: 'Mission complete — Oxygen filtration is Operational. One filter installed; Repair Tool retained. Resource simulation unchanged.',
     requirements: [{ itemId: 'tool', quantity: 1, consumed: false }, { itemId: 'filter', quantity: 1, consumed: true }],
     objectives: [
-      { id: 'tool', label: 'Obtain a Repair Tool' },
-      { id: 'filter', label: 'Obtain a Replacement Oxygen Filter' },
+      { id: 'tool', itemId: 'tool', label: 'Obtain a Repair Tool' },
+      { id: 'filter', itemId: 'filter', label: 'Obtain a Replacement Oxygen Filter' },
       { id: 'habitat', label: 'Enter the lunar habitat' },
       { id: 'life-support', label: 'Reach the Life-Support compartment' },
       { id: 'repair', label: 'Repair the oxygen filtration system' },
+    ],
+  },
+  [SOLAR_MISSION_ID]: {
+    id: SOLAR_MISSION_ID, title: 'Mission 02 — Restore Solar Power',
+    description: 'Recover the Spare Power Cell, reach the exterior solar station, inspect its control unit, and install the cell. This maintenance exercise does not change resource-model power or time.',
+    requirements: [{ itemId: 'cell', quantity: 1, consumed: true }],
+    prerequisites: ['station', 'inspect'], completionEvents: ['install', 'maintenance'],
+    completionMessage: 'Mission complete — Solar power equipment is Operational. One Spare Power Cell installed. Resource battery, generation and time unchanged.',
+    objectives: [
+      { id: 'cell', itemId: 'cell', label: 'Obtain the Spare Power Cell' },
+      { id: 'station', label: 'Reach the exterior solar power station' },
+      { id: 'inspect', label: 'Inspect the solar power control unit' },
+      { id: 'install', label: 'Install the Spare Power Cell' },
+      { id: 'maintenance', label: 'Complete the solar power maintenance task' },
     ],
   },
 }
@@ -21,7 +41,8 @@ export function createMissionState(id = MISSION_ID) {
   if (!MISSIONS[id]) throw new RangeError('Unknown mission ID.')
   return { id, status: 'not-started', completedObjectives: [] }
 }
-export const createExplorationSession = () => ({ ...createInventorySession(), mission: createMissionState(), currentLocation: 'exterior' })
+export const createExplorationSession = () => ({ ...createInventorySession(),
+  missions: Object.fromEntries(Object.keys(MISSIONS).map((id) => [id, createMissionState(id)])), currentLocation: 'exterior' })
 export function getMissionProgress(mission) {
   const definition = MISSIONS[mission.id]
   return definition.objectives.map((objective) => ({ ...objective, completed: mission.completedObjectives.includes(objective.id) }))
@@ -29,71 +50,102 @@ export function getMissionProgress(mission) {
 function progress(mission, inventory, events = []) {
   if (mission.status !== 'active') return mission
   const completed = new Set(mission.completedObjectives)
-  for (const itemId of ['tool', 'filter']) if (ownsItem(inventory, itemId)) completed.add(itemId)
+  for (const objective of MISSIONS[mission.id].objectives) {
+    if (objective.itemId && ownsItem(inventory, objective.itemId)) completed.add(objective.id)
+  }
   events.forEach((id) => completed.add(id))
   const completedObjectives = MISSIONS[mission.id].objectives.filter((o) => completed.has(o.id)).map((o) => o.id)
+  if (completedObjectives.join(',') === mission.completedObjectives.join(',')) return mission
   return { ...mission, completedObjectives, status: completedObjectives.length === MISSIONS[mission.id].objectives.length ? 'completed' : 'active' }
 }
-function update(state, next) {
-  const added = next.mission.completedObjectives.filter((id) => !state.mission.completedObjectives.includes(id))
-  if (next.mission.status === 'completed' && state.mission.status !== 'completed') {
-    return { ...next, notification: 'Mission complete — Oxygen filtration is Operational. One filter installed; Repair Tool retained. Resource simulation unchanged.' }
+function update(state, next, events = {}) {
+  const missions = Object.fromEntries(Object.entries(next.missions).map(([id, mission]) => [id, progress(mission, next.inventory, events[id] || [])]))
+  const messages = []
+  for (const [id, mission] of Object.entries(missions)) {
+    const previous = state.missions[id]
+    if (mission.status === 'completed' && previous.status !== 'completed') messages.push(MISSIONS[id].completionMessage)
+    else {
+      const added = MISSIONS[id].objectives.filter((o) => mission.completedObjectives.includes(o.id) && !previous.completedObjectives.includes(o.id))
+      if (added.length) messages.push(`${MISSIONS[id].title}: Objective updated: ${added.map((o) => o.label).join('; ')}.`)
+    }
   }
-  if (!added.length) return next
-  const labels = MISSIONS[next.mission.id].objectives.filter((o) => added.includes(o.id)).map((o) => o.label)
-  return { ...next, notification: `${next.notification ? `${next.notification} ` : ''}Objective updated: ${labels.join('; ')}.` }
+  if (next === state && Object.keys(missions).every((id) => missions[id] === state.missions[id])) return state
+  const notices = [next.notification !== state.notification ? next.notification : '', ...messages].filter(Boolean)
+  return { ...next, missions, notification: messages.length ? notices.join(' ') : next.notification }
+}
+
+export function atSolarStation(x, z) {
+  const station = interactables.find((entry) => entry.id === 'solar')
+  const distance = Math.hypot(x - station.position[0], z - station.position[1])
+  if (!Number.isFinite(distance) || distance > 3) return false
+  const steps = Math.max(1, Math.ceil(distance / 0.04))
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps
+    if (!canWalk(x + (station.position[0] - x) * t, z + (station.position[1] - z) * t)) return false
+  }
+  return true
 }
 
 export function getInteriorRoom(x, z, doorState) {
   if (!canWalkInterior(x, z, doorState)) return null
   return rooms.find(({ bounds: [left, right, back, front] }) => x >= left && x <= right && z >= back && z <= front)?.id || null
 }
-export function missingRepairItems(inventory) {
-  return MISSIONS[MISSION_ID].requirements.filter((r) => !ownsItem(inventory, r.itemId, r.quantity)).map((r) => ITEM_TYPES[r.itemId].name)
+export function missingRepairItems(inventory, id = MISSION_ID) {
+  return MISSIONS[id].requirements.filter((r) => !ownsItem(inventory, r.itemId, r.quantity)).map((r) => ITEM_TYPES[r.itemId].name)
 }
-export function canRepairSystem(state, context) {
-  return state.mission.status === 'active' && state.currentLocation === 'interior' &&
-    context?.location === 'interior' && context.consoleId === 'life-support' &&
-    getInteriorRoom(context.x, context.z, context.doorState) === 'life-support' &&
-    selectInteriorInteraction(context.x, context.z, context.doorState)?.id === 'life-support' &&
-    state.mission.completedObjectives.includes('habitat') && state.mission.completedObjectives.includes('life-support') &&
-    missingRepairItems(state.inventory).length === 0
+function validConsole(state, context, id) {
+  if (id === SOLAR_MISSION_ID) return state.currentLocation === 'exterior' && context?.location === 'exterior' && context.consoleId === 'solar' && atSolarStation(context.x, context.z)
+  return state.currentLocation === 'interior' && context?.location === 'interior' && context.consoleId === 'life-support' &&
+    getInteriorRoom(context.x, context.z, context.doorState) === 'life-support' && selectInteriorInteraction(context.x, context.z, context.doorState)?.id === 'life-support'
+}
+export function canRepairSystem(state, context, id = MISSION_ID) {
+  const mission = state.missions[id], definition = MISSIONS[id]
+  return mission?.status === 'active' && validConsole(state, context, id) &&
+    definition.prerequisites.every((objective) => mission.completedObjectives.includes(objective)) && missingRepairItems(state.inventory, id).length === 0
+}
+function maintain(state, context, id) {
+  if (!canRepairSystem(state, context, id)) return state
+  let inventory = state.inventory
+  for (const requirement of MISSIONS[id].requirements.filter((r) => r.consumed)) {
+    const result = removeItem(inventory, requirement.itemId, requirement.quantity)
+    if (!result.ok) return state
+    inventory = result.inventory
+  }
+  // Record acquired-item objectives before consuming their items.
+  const mission = progress(state.missions[id], state.inventory, MISSIONS[id].completionEvents)
+  return update(state, { ...state, inventory, missions: { ...state.missions, [id]: mission } })
 }
 
-/** One pure reducer owns inventory, world collection IDs, and mission progress. */
+/** One pure reducer owns shared inventory and independent per-mission progress. */
 export function explorationReducer(state, event) {
   switch (event.type) {
     case 'start': {
-      if (state.mission.status !== 'not-started') return state
-      const mission = progress({ ...state.mission, status: 'active' }, state.inventory)
-      return update(state, { ...state, mission, notification: 'Mission active — press M to review objectives.' })
+      if (Object.values(state.missions).every((mission) => mission.status !== 'not-started')) return state
+      const missions = Object.fromEntries(Object.entries(state.missions).map(([id, mission]) => [id, mission.status === 'not-started' ? { ...mission, status: 'active' } : mission]))
+      return update(state, { ...state, missions, notification: 'Missions active — press M to review objectives.' })
     }
     case 'collect': {
       const object = collectibles.find((entry) => entry.id === event.id && entry.location === state.currentLocation)
       if (!object) return state
       const collection = collectItem(state, object)
       if (collection === state) return state
-      const next = { ...state, ...collection }
-      next.mission = progress(state.mission, next.inventory)
-      return update(state, next)
+      return update(state, { ...state, ...collection })
     }
     case 'scene-entered': {
       if (!['exterior', 'interior', 'greenhouse'].includes(event.location)) return state
-      return update(state, { ...state, currentLocation: event.location,
-        mission: progress(state.mission, state.inventory, event.location === 'interior' ? ['habitat'] : []) })
+      return update(state, { ...state, currentLocation: event.location }, event.location === 'interior' ? { [MISSION_ID]: ['habitat'] } : {})
     }
     case 'position': {
-      if (state.currentLocation !== 'interior' || state.mission.status !== 'active' || state.mission.completedObjectives.includes('life-support')) return state
-      if (getInteriorRoom(event.x, event.z, event.doorState) !== 'life-support') return state
-      return update(state, { ...state, mission: progress(state.mission, state.inventory, ['life-support']) })
+      if (state.currentLocation === 'exterior' && atSolarStation(event.x, event.z)) return update(state, state, { [SOLAR_MISSION_ID]: ['station'] })
+      if (state.currentLocation === 'interior' && getInteriorRoom(event.x, event.z, event.doorState) === 'life-support') return update(state, state, { [MISSION_ID]: ['life-support'] })
+      return state
     }
-    case 'repair': {
-      if (!canRepairSystem(state, event.context)) return state
-      const result = removeItem(state.inventory, 'filter', 1)
-      if (!result.ok) return state
-      return update(state, { ...state, inventory: result.inventory,
-        mission: progress(state.mission, state.inventory, ['repair']) })
+    case 'inspect': {
+      if (!validConsole(state, event.context, SOLAR_MISSION_ID)) return state
+      return update(state, state, { [SOLAR_MISSION_ID]: ['station', 'inspect'] })
     }
+    case 'repair': return maintain(state, event.context, MISSION_ID)
+    case 'install-cell': return maintain(state, event.context, SOLAR_MISSION_ID)
     case 'dismiss-notification': return { ...state, notification: '' }
     default: return state
   }
