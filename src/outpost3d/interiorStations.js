@@ -13,7 +13,7 @@ export const interiorStations = [
     action: 'inspect', room: 'life-support', position: [-6, -3],
     description: 'A pressurized habitat needs more than oxygen. Carbon dioxide removal, ventilation, temperature control, and water handling help maintain a livable environment. Sensors and regular maintenance help the crew find problems early.',
     function: 'Help operators understand and maintain the habitat environment.',
-    relationship: 'Life support depends on electrical energy, stored supplies, and working equipment. Resource controls and maintenance tasks are not connected here yet.',
+    relationship: 'Life support depends on electrical energy, stored supplies, and working equipment. Mission 01 lets you replace a filtration cartridge using inventory items. The resource simulation remains separate.',
   },
   {
     id: 'crew-quarters', name: 'Crew Quarters', domain: 'crew-health',

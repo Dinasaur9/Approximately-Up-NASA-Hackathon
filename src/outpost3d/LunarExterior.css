@@ -7,6 +7,12 @@
 .lunar-exterior button:focus-visible { outline: 2px solid white; outline-offset: 4px; }
 .lunar-exterior .exterior-entry { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -45%); width: min(430px, calc(100% - 64px)); box-sizing: border-box; padding: 24px; background: #080f1ee8; border: 1px solid var(--info-border); border-top: 3px solid var(--nasa-red); box-shadow: 0 20px 60px #0008; }
 .lunar-exterior .exterior-entry-hidden { visibility: hidden; pointer-events: none; }
+.lunar-exterior .exterior-header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; pointer-events: auto; }
+.lunar-exterior .exterior-header-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.lunar-exterior .exterior-entry { max-height: calc(100% - 180px); overflow-y: auto; }
+.lunar-exterior .exterior-entry.exterior-resume { top: auto; bottom: 120px; transform: translateX(-50%); width: min(320px, calc(100% - 32px)); padding: 12px 16px; border-top: 1px solid var(--info-border); background: #080f1ed9; box-shadow: 0 8px 24px #0005; }
+.lunar-exterior .exterior-entry.exterior-resume button { box-sizing: border-box; margin: 0; padding: 10px 12px; background: var(--info-bg); color: var(--text-h); border-color: var(--info-border); }
+.lunar-exterior .exterior-entry.exterior-resume p { margin-top: 8px; font-size: 11px; text-align: center; }
 .lunar-exterior .exterior-entry h2 { font-size: 21px; line-height: 1.5; margin: 10px 0; }
 .lunar-exterior .exterior-entry p { font-size: 13px; line-height: 1.7; }
 .lunar-exterior .exterior-entry button { background: var(--nasa-red); border-color: var(--nasa-red); color: #080b11; margin: 18px 0; width: 100%; font-weight: bold; }
@@ -22,12 +28,35 @@
 .lunar-exterior .equipment-dialog dt { color: #9cbfff; font: 12px/1.6 var(--mono); text-transform: uppercase; margin-top: 16px; }
 .lunar-exterior .equipment-dialog dd { margin: 6px 0 0; }
 .lunar-exterior .equipment-note { color: #b2c4d4; margin: 20px 0; }
-.lunar-exterior .equipment-dialog button { width: 100%; }
+.lunar-exterior .equipment-dialog button { box-sizing: border-box; display: block; width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .lunar-exterior .equipment-dialog button + button { margin-top: 12px; }
 .lunar-exterior .inventory-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
 .lunar-exterior .inventory-grid button { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; padding: 12px 8px; min-height: 125px; margin: 0; font-size: 11px; overflow-wrap: anywhere; }
 .lunar-exterior .inventory-grid button[aria-pressed="true"] { border-color: #ffc982; background: #243950; }
 .lunar-exterior .inventory-grid button + button { margin-top: 0; }
+.lunar-exterior .equipment-inspection[open] { display: flex; flex-direction: column; max-height: min(85svh, calc(100svh - 32px)); overflow: hidden; padding: 0; }
+.lunar-exterior .inspection-content { min-height: 0; min-width: 0; overflow-y: auto; overscroll-behavior: contain; padding: 24px; scrollbar-gutter: stable; overflow-wrap: anywhere; }
+.lunar-exterior .inspection-actions { flex: 0 0 auto; padding: 16px 24px; border-top: 1px solid var(--info-border); background: #0a1423; }
+.lunar-exterior .mission-maintenance { box-sizing: border-box; display: grid; gap: 18px; min-width: 0; margin: 16px 0; padding: 18px; border: 1px solid var(--info-border); background: var(--info-bg); }
+.lunar-exterior .mission-maintenance h3 { margin: 0; font: 15px/1.6 var(--mono); color: #e5d7a7; }
+.lunar-exterior .mission-maintenance p { margin: 0; }
+.lunar-exterior .maintenance-requirements h4 { margin: 0 0 10px; font: 13px/1.6 var(--mono); }
+.lunar-exterior .maintenance-requirements ul { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.lunar-exterior .maintenance-requirements li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.7; }
+.lunar-exterior .maintenance-requirements li span { flex: 1 1 180px; min-width: 0; }
+.lunar-exterior .maintenance-requirements small { display: block; color: #b2c4d4; font-size: 12px; }
+.lunar-exterior .maintenance-requirements strong { color: #e5d7a7; font: 12px/1.7 var(--mono); }
+.lunar-exterior .maintenance-action { display: grid; gap: 12px; min-width: 0; }
+.lunar-exterior .maintenance-disclaimer { padding-top: 14px; border-top: 1px solid var(--info-border); color: #b2c4d4; }
+@media (max-width: 480px), (max-height: 500px) {
+  .lunar-exterior .equipment-inspection[open] { width: calc(100% - 16px); max-height: calc(100svh - 16px); }
+  .lunar-exterior .inspection-content { padding: 16px; }
+  .lunar-exterior .inspection-actions { padding: 12px 16px; }
+  .lunar-exterior .mission-maintenance { padding: 14px; }
+}
+.lunar-exterior .mission-maintenance button:disabled { opacity: 0.5; cursor: not-allowed; }
+.lunar-exterior .mission-status { margin-top: 14px; color: #b7ddf2; font-family: var(--mono); }
+.lunar-exterior .mission-objectives { padding-left: 20px; font-size: 14px; line-height: 1.8; }
 .lunar-exterior .inventory-icon { font-size: 28px; line-height: 1; color: #a5d4ec; }
 .lunar-exterior .inventory-description { padding: 14px; background: var(--info-bg); border-left: 3px solid var(--info); }
 .lunar-exterior .inventory-description h3 { font: 14px/1.6 var(--mono); margin: 0 0 8px; }

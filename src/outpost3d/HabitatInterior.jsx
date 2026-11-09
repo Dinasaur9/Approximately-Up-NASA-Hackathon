@@ -5,18 +5,18 @@ function Wall({ position, size }) {
   return <Part position={position} size={size} color="#8b9ba5" />
 }
 
-function Console({ x, z, rotation = 0 }) {
+function Console({ x, z, rotation = 0, statusColor = '#80e9dc' }) {
   return <group position={[x, 0, z]} rotation={[0, rotation, 0]}>
     <Part position={[0, 0.55, 0]} size={[1.5, 1.1, 1.2]} color="#273b50" />
     <Part position={[0, 1.05, 0.3]} size={[1.6, 0.12, 1.4]} color="#576a79" />
     <Part position={[0, 1.6, -0.3]} size={[1.4, 0.9, 0.12]} color="#13202f" />
     <mesh position={[0, 1.6, -0.23]}><planeGeometry args={[1.2, 0.65]} /><meshStandardMaterial color="#4ab6d0" emissive="#1b83a1" emissiveIntensity={0.65} /></mesh>
     {[-0.35, 0, 0.35].map((x) => <Part key={x} position={[x, 1.65, -0.15]} size={[0.18, 0.035, 0.03]} color="#bce9e0" />)}
-    <Beacon position={[0.65, 1.1, 0.6]} />
+    <Beacon position={[0.65, 1.1, 0.6]} color={statusColor} />
   </group>
 }
 
-export default function HabitatInterior({ doorState }) {
+export default function HabitatInterior({ doorState, filtrationOperational = false }) {
   return <>
     <color attach="background" args={['#0c1420']} />
     <ambientLight intensity={0.65} />
@@ -46,7 +46,10 @@ export default function HabitatInterior({ doorState }) {
     {[-1.8, 0, 1.8].map((x) => <Console key={x} x={x} z={-13} />)}
     <Part position={[3.3, 1.1, -13]} size={[0.5, 2.2, 1]} color="#293b50" />
     {[0.7, 1.1, 1.5].map((y) => <Part key={y} position={[3.3, y, -12.45]} size={[0.35, 0.15, 0.05]} color="#6d9fba" />)}
-    <Console x={-8} z={-1.7} rotation={Math.PI / 2} />
+    <Console x={-8} z={-1.7} rotation={Math.PI / 2} statusColor={filtrationOperational ? '#7de0b4' : '#ffc16e'} />
+    <group position={[-7.2, 2.7, -1.7]} rotation={[0, Math.PI / 2, 0]}>
+      <Label text={filtrationOperational ? 'FILTRATION / OPERATIONAL' : 'FILTRATION / MAINTENANCE'} position={[0, 0, 0]} width={2.3} color={filtrationOperational ? '#7de0b4' : '#ffc16e'} />
+    </group>
     {[-4.6, -3.5].map((z) => <group key={z}>
       <mesh position={[-8, 1.2, z]} castShadow><cylinderGeometry args={[0.42, 0.42, 2.4, 12]} /><meshStandardMaterial color="#aebec6" metalness={0.65} roughness={0.4} /></mesh>
       <Strut from={[-8, 2.5, z]} to={[-7.2, 2.5, z]} radius={0.09} />
