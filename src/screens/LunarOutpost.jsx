@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useReducer } from 'react'
 import ResourcePanel from '../components/outpost/ResourcePanel.jsx'
 import { OUTPOST_CONFIG as C } from '../outpost/config.js'
-import { createInitialOutpostState, advanceOutpostHour } from '../outpost/model.js'
+import { advanceOutpostHour } from '../outpost/model.js'
+import { createResourceSession, resourceSessionReducer } from '../outpost/session.js'
 import './LunarOutpost.css'
 
 const format = (value) => value.toFixed(2)
@@ -40,29 +41,28 @@ function TurnReport({ report }) {
 }
 
 export default function LunarOutpost({ onBack }) {
-  const [state, setState] = useState(createInitialOutpostState)
-  const [controls, setControls] = useState(() => createInitialOutpostState().controls)
+  const [session, dispatch] = useReducer(resourceSessionReducer, undefined, createResourceSession)
+  return <LunarOutpostDashboard session={session} dispatch={dispatch} onBack={onBack} />
+}
+
+// Controlled view: the terminal mounts this without creating a second session.
+export function LunarOutpostDashboard({ session, dispatch, onBack }) {
+  const { state, controls } = session
   const active = state.status === 'active'
   // The model owns all simulation calculations, including forecast and shortages.
   const preview = active ? advanceOutpostHour(state, controls) : null
   const forecast = preview?.lastTurn.environment
 
   function toggle(key) {
-    setControls((current) => {
-      const next = { ...current, [key]: !current[key] }
-      if (next.shelterMode) next.foodProductionOn = false
-      return next
-    })
+    dispatch({ type: 'toggle', key })
   }
 
   function advance() {
-    setState((current) => current.status === 'active' ? advanceOutpostHour(current, controls) : current)
+    dispatch({ type: 'advance' })
   }
 
   function restart() {
-    const initial = createInitialOutpostState()
-    setState(initial)
-    setControls(initial.controls)
+    dispatch({ type: 'restart' })
   }
 
   return (

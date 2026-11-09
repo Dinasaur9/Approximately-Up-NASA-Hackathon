@@ -12,6 +12,8 @@ import { selectCollectibleInteraction } from './collectibles.js'
 import MissionPanel from './MissionPanel.jsx'
 import MissionEvents from './MissionEvents.jsx'
 import ControlsPanel from './ControlsPanel.jsx'
+import ResourceTerminal from './ResourceTerminal.jsx'
+import { createResourceSession, resourceSessionReducer } from '../outpost/session.js'
 import { dismissIntroduction, getExplorationOverlay } from './explorationOverlay.js'
 import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, SPACECRAFT_MISSION_ID, canRecordInspection, canSubmitChecklist } from './missions.js'
 import { spacecraftInspections } from './spacecraft.js'
@@ -36,6 +38,8 @@ export default function LunarExterior({ onBack }) {
   const [inspecting, setInspecting] = useState(null)
   const [dismissedIntroductions, setDismissedIntroductions] = useState([])
   const [helpOpen, setHelpOpen] = useState(false)
+  const [resourceOpen, setResourceOpen] = useState(false)
+  const [resourceSession, resourceDispatch] = useReducer(resourceSessionReducer, undefined, createResourceSession)
   const panelGate = useRef(null)
   const [location, setLocation] = useState('exterior')
   const [profile, setProfile] = useState(sceneProfiles.initial)
@@ -70,7 +74,7 @@ export default function LunarExterior({ onBack }) {
     return selectCollectibleInteraction(x, z, location, inventorySession.collectedIds, base)
   }, [location, interiorSelection, inventorySession.collectedIds])
   const transitionGuard = useRef(false)
-  const blocked = Boolean(inspecting || transition || inventoryOpen || missionOpen || helpOpen)
+  const blocked = Boolean(inspecting || transition || inventoryOpen || missionOpen || helpOpen || resourceOpen)
   const overlay = getExplorationOverlay({ location, dismissed: dismissedIntroductions, locked, blocked })
   const enterButtonRef = useRef(null)
   const onLockChange = useCallback((value) => { setLocked(value); if (value) { setError(''); dispatch({ type: 'start' }) } }, [])
@@ -82,6 +86,7 @@ export default function LunarExterior({ onBack }) {
   const closeInventory = useCallback(() => { panelGate.current = null; setInventoryOpen(false) }, [])
   const closeMissions = useCallback(() => { panelGate.current = null; setMissionOpen(false) }, [])
   const closeHelp = useCallback(() => { panelGate.current = null; setHelpOpen(false) }, [])
+  const closeResources = useCallback(() => { panelGate.current = null; setResourceOpen(false) }, [])
   const dismissCurrentIntroduction = () => setDismissedIntroductions((current) => dismissIntroduction(current, location))
   const openHelp = () => {
     if (panelGate.current || transitionGuard.current) return
@@ -115,6 +120,12 @@ export default function LunarExterior({ onBack }) {
   const interact = useCallback((entry, position) => {
     if (transitionGuard.current) return
     if (panelGate.current && !(panelGate.current === 'inspection' && !position)) return
+    if (entry.action === 'resources' && location === 'interior') {
+      panelGate.current = 'resources'
+      setDismissedIntroductions((current) => dismissIntroduction(current, location))
+      setResourceOpen(true)
+      return
+    }
     if (entry.action === 'collect') {
       dispatch({ type: 'collect', id: entry.id })
       return
@@ -263,6 +274,7 @@ export default function LunarExterior({ onBack }) {
     {inventoryOpen && <InventoryPanel inventory={inventorySession.inventory} onClose={closeInventory} />}
     {missionOpen && <MissionPanel missions={inventorySession.missions} onClose={closeMissions} />}
     {helpOpen && <ControlsPanel onClose={closeHelp} />}
+    {resourceOpen && <ResourceTerminal session={resourceSession} dispatch={resourceDispatch} onClose={closeResources} />}
     {inventorySession.notification && <p className="inventory-notification" role="status">{inventorySession.notification}</p>}
     {transition && <div className={`habitat-transition habitat-transition-${transition.phase}`} role="status">Cycling airlock… {transition.destination === 'interior' ? 'Entering habitat' : transition.destination === 'greenhouse' ? 'Entering greenhouse' : 'Returning to lunar surface'}</div>}
     <footer className="exterior-instructions">{locked ? 'EXPLORING' : 'PAUSED'} · WASD walk · Mouse look · Shift faster · E interact · I inventory · M missions · H help · Esc release<br />

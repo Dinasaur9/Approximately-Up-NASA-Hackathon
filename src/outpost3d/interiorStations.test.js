@@ -12,7 +12,7 @@ test('all four stations are reachable and independently selectable', () => {
   for (const station of interiorStations) {
     assert.equal(canWalkInterior(...station.position), true, station.id)
     assert.equal(selectInteraction(...station.position, interiorInteractions).id, station.id)
-    assert.equal(station.action, 'inspect')
+    assert.equal(station.action, station.id === 'mission-control' ? 'resources' : 'inspect')
     assert.equal(transitionDestination('interior', station.action), null)
     assert.ok(station.description && station.function && station.relationship && station.domain)
     assert.equal(station.panelAction, undefined)

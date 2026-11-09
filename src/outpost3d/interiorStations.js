@@ -3,10 +3,10 @@
 export const interiorStations = [
   {
     id: 'mission-control', name: 'Mission Control Terminal', domain: 'mission-monitoring',
-    action: 'inspect', room: 'mission-control', position: [0, -11],
+    action: 'resources', prompt: 'Open Resource Management', room: 'mission-control', position: [0, -11],
     description: 'Mission control brings together schedules, communications, and equipment status so a crew can coordinate its work. Comparing information from several systems helps engineers spot conflicts before making a decision.',
     function: 'Coordinate mission plans and review system information.',
-    relationship: 'Future mission and crew monitoring could help balance tasks against power and life-support needs. This exhibit shows no live telemetry.',
+    relationship: 'This terminal opens the shared turn-based resource dashboard for this exploration session. Walking and training repairs do not advance its clock or alter resources.',
   },
   {
     id: 'life-support', name: 'Life-Support Console', domain: 'life-support',
