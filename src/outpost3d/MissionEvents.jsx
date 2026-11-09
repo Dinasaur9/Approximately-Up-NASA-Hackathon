@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { atSolarStation, atNutrientStation, getInteriorRoom } from './missions.js'
+import { atSpacecraft } from './spacecraft.js'
 
 export default function MissionEvents({ location, doorState, blocked, dispatch }) {
   const { gl } = useThree()
@@ -9,6 +10,7 @@ export default function MissionEvents({ location, doorState, blocked, dispatch }
     if (blocked || document.pointerLockElement !== gl.domElement) { lastRoom.current = null; return }
     const room = location === 'interior' ? getInteriorRoom(camera.position.x, camera.position.z, doorState)
       : location === 'exterior' && atSolarStation(camera.position.x, camera.position.z) ? 'solar'
+        : location === 'exterior' && atSpacecraft(camera.position.x, camera.position.z) ? 'spacecraft'
         : location === 'greenhouse' && atNutrientStation(camera.position.x, camera.position.z) ? 'nutrients' : null
     if (room !== lastRoom.current) {
       lastRoom.current = room

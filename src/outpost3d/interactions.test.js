@@ -3,9 +3,9 @@ import assert from 'node:assert/strict'
 import { selectInteraction, interactables, INTERACTION_RANGE } from './interactions.js'
 import { canWalk } from './world.js'
 
-test('all seven inspection points are reachable and select their equipment', () => {
-  assert.equal(interactables.length, 7)
-  assert.equal(new Set(interactables.map((entry) => entry.id)).size, 7)
+test('all exterior inspection points are reachable and select their equipment', () => {
+  assert.equal(interactables.length, 10)
+  assert.equal(new Set(interactables.map((entry) => entry.id)).size, 10)
   for (const entry of interactables) {
     assert.equal(canWalk(...entry.position), true, entry.id)
     assert.equal(selectInteraction(...entry.position).id, entry.id)

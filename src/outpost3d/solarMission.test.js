@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, MISSIONS, createExplorationSession, explorationReducer as reduce, getMissionProgress, canRepairSystem, atSolarStation } from './missions.js'
+import { MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, SPACECRAFT_MISSION_ID, MISSIONS, createExplorationSession, explorationReducer as reduce, getMissionProgress, canRepairSystem, atSolarStation } from './missions.js'
 import { collectibles, availableCollectibles } from './collectibles.js'
 import { ownsItem, addItem } from './inventory.js'
 import { createDoorState } from './interior.js'
@@ -31,7 +31,7 @@ function freeze(value) {
 
 test('both missions initialize independently and starting recognizes an already collected cell', () => {
   let state = createExplorationSession()
-  assert.deepEqual(Object.keys(state.missions), [MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID])
+  assert.deepEqual(Object.keys(state.missions), [MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, SPACECRAFT_MISSION_ID])
   assert.ok(Object.values(state.missions).every((mission) => mission.status === 'not-started'))
   state = pickup(state, 'cell')
   state = reduce(state, { type: 'start' })

@@ -151,7 +151,7 @@ test('all three missions complete in any order without resetting completed state
       for (const [id, mission] of Object.entries(completed)) assert.strictEqual(state.missions[id], mission)
       completed[ids[name]] = state.missions[ids[name]]
     }
-    assert.ok(Object.values(state.missions).every((mission) => mission.status === 'completed'))
+    assert.ok([MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID].every((id) => state.missions[id].status === 'completed'))
     assert.equal(ownsItem(state.inventory, 'tool'), true)
     for (const itemId of ['filter', 'cell', 'nutrient']) assert.equal(ownsItem(state.inventory, itemId), false)
   }

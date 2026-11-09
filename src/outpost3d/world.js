@@ -1,3 +1,5 @@
+import { spacecraftFootprints } from './spacecraftLayout.js'
+
 // Procedural scenery only; independent of the resource and landing simulations.
 export const BOUNDARY = 65
 export const EYE_HEIGHT = 1.7
@@ -17,7 +19,7 @@ export const footprints = [
   [-1.8, 1.8, -4.2, -0.8], // Airlock
   [10, 18, -12, -4], // Greenhouse
   ...[-15, -23].map((x) => [x - 3.5, x + 3.5, -12, 2]),
-  [20.5, 29.5, -14.5, -5.5], // Parked lander, including legs and footpads
+  ...spacecraftFootprints,
   [6, 8, -1, 1], // Oxygen equipment
   [-17, -13, 2.4, 3.6], // Battery bank
   [18.5, 21.5, 3, 5], // Communications pedestal

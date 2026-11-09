@@ -13,11 +13,12 @@ import MissionPanel from './MissionPanel.jsx'
 import MissionEvents from './MissionEvents.jsx'
 import ControlsPanel from './ControlsPanel.jsx'
 import { dismissIntroduction, getExplorationOverlay } from './explorationOverlay.js'
-import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID } from './missions.js'
+import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, SPACECRAFT_MISSION_ID, canRecordInspection, canSubmitChecklist } from './missions.js'
+import { spacecraftInspections } from './spacecraft.js'
 import { ITEM_TYPES } from './inventory.js'
 import { selectGreenhouseInteraction } from './greenhouse.js'
 import { sceneProfiles, transitionDestination, createDoorState, canWalkInterior, selectInteriorInteraction, toggleDoor } from './interior.js'
-import { interactables, selectInteraction } from './interactions.js'
+import { selectExteriorInteraction } from './interactions.js'
 import './LunarExterior.css'
 
 class SceneBoundary extends Component {
@@ -50,18 +51,22 @@ export default function LunarExterior({ onBack }) {
   const solarOperational = solarMission.status === 'completed'
   const solarMissing = missingRepairItems(inventorySession.inventory, SOLAR_MISSION_ID)
   const nutrientMission = inventorySession.missions[NUTRIENT_MISSION_ID]
+  const spacecraftMission = inventorySession.missions[SPACECRAFT_MISSION_ID]
+  const spacecraftSubmitted = spacecraftMission.status === 'completed'
+  const component = spacecraftInspections.find((entry) => entry.id === inspecting?.id)
+  const pendingInspections = spacecraftInspections.filter((entry) => !spacecraftMission.completedObjectives.includes(entry.objectiveId))
   const nutrientsReplenished = nutrientMission.status === 'completed'
   const nutrientQuantity = inventorySession.inventory.reduce((sum, slot) => sum + (slot?.itemId === 'nutrient' ? slot.quantity : 0), 0)
   const operational = mission.status === 'completed'
   const missing = missingRepairItems(inventorySession.inventory)
-  const hudMission = Object.values(inventorySession.missions).find((entry) => entry.status !== 'completed') || nutrientMission
+  const hudMission = Object.values(inventorySession.missions).find((entry) => entry.status !== 'completed') || spacecraftMission
   const nextObjective = getMissionProgress(hudMission).find((o) => !o.completed)
   const title = location === 'interior' ? 'Lunar Habitat Interior' : location === 'greenhouse' ? 'Lunar Greenhouse Interior' : 'Lunar Outpost Exterior'
   const interiorWalkable = useCallback((x, z) => canWalkInterior(x, z, doorState), [doorState])
   const interiorSelection = useCallback((x, z) => selectInteriorInteraction(x, z, doorState), [doorState])
   const resolveInteraction = useCallback((x, z) => {
     const base = location === 'interior' ? interiorSelection(x, z)
-      : location === 'greenhouse' ? selectGreenhouseInteraction(x, z) : selectInteraction(x, z, interactables)
+      : location === 'greenhouse' ? selectGreenhouseInteraction(x, z) : selectExteriorInteraction(x, z)
     return selectCollectibleInteraction(x, z, location, inventorySession.collectedIds, base)
   }, [location, interiorSelection, inventorySession.collectedIds])
   const transitionGuard = useRef(false)
@@ -164,7 +169,7 @@ export default function LunarExterior({ onBack }) {
     <SceneBoundary>
       <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 70, near: 0.1, far: 350 }}
         fallback={<p className="exterior-fallback">WebGL is unavailable. Use a browser with hardware acceleration enabled.</p>}>
-        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior nutrientsReplenished={nutrientsReplenished} /> : <Environment solarOperational={solarOperational} />}
+        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior nutrientsReplenished={nutrientsReplenished} /> : <Environment solarOperational={solarOperational} spacecraftObjectives={spacecraftMission.completedObjectives} />}
         <Collectibles location={location} collectedIds={inventorySession.collectedIds} />
         <Player enterButtonRef={enterButtonRef} onLockChange={onLockChange} onError={onError} paused={blocked} profile={profile} canWalkOverride={location === 'interior' ? interiorWalkable : undefined} />
         <Interactions blocked={blocked} onNearby={setNearby} onInspect={interact} resolveInteraction={resolveInteraction} />
@@ -237,6 +242,22 @@ export default function LunarExterior({ onBack }) {
           <button type="button" disabled={!canRepairSystem(inventorySession, inspectionContext, NUTRIENT_MISSION_ID)} onClick={() => dispatch({ type: 'deliver-nutrients', context: inspectionContext })}>Deliver Nutrients</button>
         </div>}
         <p className="maintenance-disclaimer">Delivery changes mission state and consumes exactly two inventory samples. The resource model’s food production, battery level and simulation time remain unchanged.</p>
+      </section>}
+      {component && location === 'exterior' && <section className="mission-maintenance" aria-live="polite">
+        <h3>{spacecraftMission.completedObjectives.includes(component.objectiveId) ? 'Inspection Recorded' : 'Not Inspected'}</h3>
+        <p>Read the component description, then record this post-landing training inspection. No equipment is consumed.</p>
+        <button type="button" disabled={!canRecordInspection(inventorySession, inspectionContext)} onClick={() => dispatch({ type: 'record-inspection', context: inspectionContext })}>{component.recordLabel}</button>
+      </section>}
+      {inspecting.id === 'lander' && location === 'exterior' && <section className="mission-maintenance" aria-live="polite">
+        <h3>{spacecraftSubmitted ? 'Checklist Submitted' : 'Post-Landing Inspection Checklist'}</h3>
+        <div className="maintenance-requirements"><ul>{spacecraftInspections.map((entry) => <li key={entry.id}>
+          <span>{entry.name}</span><strong>{spacecraftMission.completedObjectives.includes(entry.objectiveId) ? 'Recorded' : 'Pending'}</strong>
+        </li>)}</ul></div>
+        {!spacecraftSubmitted && <>
+          <p>{pendingInspections.length ? `Still required: ${pendingInspections.map((entry) => entry.name).join(', ')}. Follow the numbered markers around the spacecraft and record each inspection.` : 'All three inspections recorded. Submit your checklist to complete Mission 04.'}</p>
+          <button type="button" disabled={!canSubmitChecklist(inventorySession, inspectionContext)} onClick={() => dispatch({ type: 'submit-checklist', context: inspectionContext })}>Submit Inspection Checklist</button>
+        </>}
+        <p className="maintenance-disclaimer">Training checklist only. No inventory, landing-physics, or resource-simulation changes.</p>
       </section>}
     </EquipmentPanel>}
     {inventoryOpen && <InventoryPanel inventory={inventorySession.inventory} onClose={closeInventory} />}

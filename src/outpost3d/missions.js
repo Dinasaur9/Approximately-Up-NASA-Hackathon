@@ -1,6 +1,7 @@
 import { createInventorySession, collectItem, ownsItem, removeItem, ITEM_TYPES } from './inventory.js'
 import { canWalk } from './world.js'
-import { interactables } from './interactions.js'
+import { interactables, selectExteriorInteraction } from './interactions.js'
+import { spacecraftInspections, atSpacecraft } from './spacecraft.js'
 import { collectibles } from './collectibles.js'
 import { rooms, canWalkInterior, selectInteriorInteraction } from './interior.js'
 import { selectGreenhouseInteraction } from './greenhouse.js'
@@ -8,6 +9,7 @@ import { selectGreenhouseInteraction } from './greenhouse.js'
 export const MISSION_ID = 'restore-oxygen-filtration'
 export const SOLAR_MISSION_ID = 'restore-solar-power'
 export const NUTRIENT_MISSION_ID = 'greenhouse-nutrient-delivery'
+export const SPACECRAFT_MISSION_ID = 'post-landing-spacecraft-inspection'
 export const MISSIONS = {
   [MISSION_ID]: {
     id: MISSION_ID, title: 'Mission 01 — Restore Oxygen Filtration',
@@ -50,6 +52,19 @@ export const MISSIONS = {
       { id: 'station', label: 'Reach the Water and Nutrient Station' },
       { id: 'inspect', label: 'Inspect the nutrient delivery equipment' },
       { id: 'deliver', label: 'Deliver two Nutrient Samples' },
+    ],
+  },
+  [SPACECRAFT_MISSION_ID]: {
+    id: SPACECRAFT_MISSION_ID, title: 'Mission 04 — Post-Landing Spacecraft Inspection',
+    description: 'Visit the parked spacecraft, record landing gear, propulsion and communications inspections in any order, then submit the checklist at the main spacecraft inspection point. No inventory items are required.',
+    requirements: [], prerequisites: ['spacecraft', 'gear', 'propulsion', 'communications'], completionEvents: ['submit'],
+    completionMessage: 'Mission complete — Spacecraft Checklist Submitted. All three post-landing inspections recorded. Inventory and resource simulation unchanged.',
+    objectives: [
+      { id: 'spacecraft', label: 'Reach the landed spacecraft' },
+      { id: 'gear', label: 'Record landing gear inspection' },
+      { id: 'propulsion', label: 'Record propulsion assembly inspection' },
+      { id: 'communications', label: 'Record communications system inspection' },
+      { id: 'submit', label: 'Submit the completed inspection checklist' },
     ],
   },
 }
@@ -123,6 +138,20 @@ export function canRepairSystem(state, context, id = MISSION_ID) {
   return mission?.status === 'active' && validConsole(state, context, id) &&
     definition.prerequisites.every((objective) => mission.completedObjectives.includes(objective)) && missingRepairItems(state.inventory, id).length === 0
 }
+export function validSpacecraftContext(state, context, id) {
+  return state.currentLocation === 'exterior' && context?.location === 'exterior' && context.consoleId === id &&
+    selectExteriorInteraction(context.x, context.z)?.id === id
+}
+export function canRecordInspection(state, context) {
+  return state.missions[SPACECRAFT_MISSION_ID].status === 'active' &&
+    spacecraftInspections.some((entry) => entry.id === context?.consoleId &&
+      !state.missions[SPACECRAFT_MISSION_ID].completedObjectives.includes(entry.objectiveId) && validSpacecraftContext(state, context, entry.id))
+}
+export function canSubmitChecklist(state, context) {
+  const mission = state.missions[SPACECRAFT_MISSION_ID]
+  return mission.status === 'active' && validSpacecraftContext(state, context, 'lander') &&
+    MISSIONS[SPACECRAFT_MISSION_ID].prerequisites.every((id) => mission.completedObjectives.includes(id))
+}
 function maintain(state, context, id) {
   if (!canRepairSystem(state, context, id)) return state
   let inventory = state.inventory
@@ -156,12 +185,14 @@ export function explorationReducer(state, event) {
       return update(state, { ...state, currentLocation: event.location }, event.location === 'interior' ? { [MISSION_ID]: ['habitat'] } : event.location === 'greenhouse' ? { [NUTRIENT_MISSION_ID]: ['greenhouse'] } : {})
     }
     case 'position': {
+      if (state.currentLocation === 'exterior' && atSpacecraft(event.x, event.z)) return update(state, state, { [SPACECRAFT_MISSION_ID]: ['spacecraft'] })
       if (state.currentLocation === 'greenhouse' && atNutrientStation(event.x, event.z)) return update(state, state, { [NUTRIENT_MISSION_ID]: ['station'] })
       if (state.currentLocation === 'exterior' && atSolarStation(event.x, event.z)) return update(state, state, { [SOLAR_MISSION_ID]: ['station'] })
       if (state.currentLocation === 'interior' && getInteriorRoom(event.x, event.z, event.doorState) === 'life-support') return update(state, state, { [MISSION_ID]: ['life-support'] })
       return state
     }
     case 'inspect': {
+      if (state.currentLocation === 'exterior' && ['lander', ...spacecraftInspections.map((entry) => entry.id)].some((id) => validSpacecraftContext(state, event.context, id))) return update(state, state, { [SPACECRAFT_MISSION_ID]: ['spacecraft'] })
       if (validConsole(state, event.context, NUTRIENT_MISSION_ID)) return update(state, state, { [NUTRIENT_MISSION_ID]: ['station', 'inspect'] })
       if (!validConsole(state, event.context, SOLAR_MISSION_ID)) return state
       return update(state, state, { [SOLAR_MISSION_ID]: ['station', 'inspect'] })
@@ -169,6 +200,15 @@ export function explorationReducer(state, event) {
     case 'repair': return maintain(state, event.context, MISSION_ID)
     case 'install-cell': return maintain(state, event.context, SOLAR_MISSION_ID)
     case 'deliver-nutrients': return maintain(state, event.context, NUTRIENT_MISSION_ID)
+    case 'record-inspection': {
+      if (!canRecordInspection(state, event.context)) return state
+      const entry = spacecraftInspections.find((item) => item.id === event.context.consoleId)
+      return update(state, state, { [SPACECRAFT_MISSION_ID]: ['spacecraft', entry.objectiveId] })
+    }
+    case 'submit-checklist': {
+      if (!canSubmitChecklist(state, event.context)) return state
+      return update(state, state, { [SPACECRAFT_MISSION_ID]: ['submit'] })
+    }
     case 'dismiss-notification': return { ...state, notification: '' }
     default: return state
   }
