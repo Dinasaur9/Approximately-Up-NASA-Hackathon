@@ -24,9 +24,10 @@ export const greenhouseInteractions = [
   { id: 'greenhouse-exit', name: 'Greenhouse Airlock', action: 'exit-greenhouse', prompt: 'Exit to Lunar Surface', position: [0, 5] },
   {
     id: 'hydroponics', name: 'Hydroponic Growing System', action: 'inspect', domain: 'agriculture', position: [-1.6, -2],
+    prompt: 'Hydroponics / Food Controls',
     function: 'Support plant roots with water and dissolved nutrients rather than soil.',
     description: 'Hydroponic channels deliver a nutrient solution to roots. Pumps, root oxygenation, and careful monitoring help plants grow in a controlled module. Recirculating water can reduce waste, but the system still needs energy and maintenance.',
-    relationship: 'Plants can supplement food supplies. LED lighting and circulation compete with other equipment for electrical power. This exhibit does not grow or harvest crops.',
+    relationship: 'Plants can supplement food supplies. LED lighting and circulation compete with other equipment for electrical power. The shared food-production setting applies on the next simulated turn; inspection does not grow or harvest crops.',
   },
   {
     id: 'nutrients', name: 'Water and Nutrient Station', action: 'inspect', domain: 'water', position: [-1.8, -7],
@@ -38,7 +39,7 @@ export const greenhouseInteractions = [
     id: 'greenhouse-control', name: 'Environmental Control Terminal', action: 'inspect', domain: 'environment', position: [0, -6.8],
     function: 'Help operators coordinate the growing environment.',
     description: 'Plant growth depends on light, temperature, humidity, and air circulation. A control terminal helps operators understand these conditions and plan adjustments. The screens here are illustrative displays, not live telemetry.',
-    relationship: 'Environmental control balances crop needs against electrical demand. No resource controls are connected in this phase.',
+    relationship: 'Environmental control balances crop needs against electrical demand. Use the Hydroponic Growing System to set shared food production, or Mission Control to review the full resource plan.',
   },
   {
     id: 'crop-storage', name: 'Crop Storage', action: 'inspect', domain: 'storage', position: [1.8, -7],

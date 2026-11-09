@@ -1,5 +1,5 @@
 // Stable station IDs and domains are extension points for future gameplay.
-// These entries are educational exhibits, with no live readings or model access.
+// Live resource controls are composed into selected inspection panels.
 export const interiorStations = [
   {
     id: 'mission-control', name: 'Mission Control Terminal', domain: 'mission-monitoring',
@@ -10,6 +10,7 @@ export const interiorStations = [
   },
   {
     id: 'life-support', name: 'Life-Support Console', domain: 'life-support',
+    prompt: 'Life Support / Oxygen Controls',
     action: 'inspect', room: 'life-support', position: [-6, -3],
     description: 'A pressurized habitat needs more than oxygen. Carbon dioxide removal, ventilation, temperature control, and water handling help maintain a livable environment. Sensors and regular maintenance help the crew find problems early.',
     function: 'Help operators understand and maintain the habitat environment.',
@@ -17,10 +18,11 @@ export const interiorStations = [
   },
   {
     id: 'crew-quarters', name: 'Crew Quarters', domain: 'crew-health',
+    prompt: 'Crew Quarters / Shelter',
     action: 'inspect', room: 'crew-quarters', position: [6, 3],
     description: 'Crew members need protected space to sleep, store personal equipment, and recover between tasks. Noise control, privacy, and a planned work-rest schedule support attention and teamwork during a long mission.',
     function: 'Provide a dedicated area for rest and personal storage.',
-    relationship: 'Rest and organization support crew well-being and mission logistics. Inspecting this area does not restore health or change inventory.',
+    relationship: 'Rest and organization support crew well-being and mission logistics. This protected area also hosts the shared radiation-shelter setting. Inspection does not restore health or change inventory; shelter applies only to the next simulated hour.',
   },
   {
     id: 'research', name: 'Research Workstation', domain: 'research',

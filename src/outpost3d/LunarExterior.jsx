@@ -13,6 +13,8 @@ import MissionPanel from './MissionPanel.jsx'
 import MissionEvents from './MissionEvents.jsx'
 import ControlsPanel from './ControlsPanel.jsx'
 import ResourceTerminal from './ResourceTerminal.jsx'
+import ResourceEquipmentControls from './ResourceEquipmentControls.jsx'
+import { getResourceEquipment } from './resourceEquipment.js'
 import { createResourceSession, resourceSessionReducer } from '../outpost/session.js'
 import { getResourceVisuals } from './resourceVisuals.js'
 import { dismissIntroduction, getExplorationOverlay } from './explorationOverlay.js'
@@ -60,6 +62,7 @@ export default function LunarExterior({ onBack }) {
   const spacecraftMission = inventorySession.missions[SPACECRAFT_MISSION_ID]
   const spacecraftSubmitted = spacecraftMission.status === 'completed'
   const component = spacecraftInspections.find((entry) => entry.id === inspecting?.id)
+  const resourceEquipment = getResourceEquipment(location, inspecting?.id)
   const pendingInspections = spacecraftInspections.filter((entry) => !spacecraftMission.completedObjectives.includes(entry.objectiveId))
   const nutrientsReplenished = nutrientMission.status === 'completed'
   const nutrientQuantity = inventorySession.inventory.reduce((sum, slot) => sum + (slot?.itemId === 'nutrient' ? slot.quantity : 0), 0)
@@ -209,7 +212,8 @@ export default function LunarExterior({ onBack }) {
     </div>
     {locked && <div className="exterior-crosshair" aria-hidden="true">+</div>}
     {locked && nearby && !blocked && <p className="exterior-prompt" role="status">Press E — {nearby.prompt || `Inspect ${nearby.name}`}{nearby.action === 'door' && doorNotice && <><br />{doorNotice}</>}</p>}
-    {inspecting && <EquipmentPanel equipment={inspecting} onClose={closeInspection} onAction={panelAction} context={location === 'interior' ? 'Habitat station' : location === 'greenhouse' ? 'Greenhouse station' : 'Surface equipment'}>
+    {inspecting && <EquipmentPanel resourceMode={Boolean(resourceEquipment)} equipment={inspecting} onClose={closeInspection} onAction={panelAction} context={location === 'interior' ? 'Habitat station' : location === 'greenhouse' ? 'Greenhouse station' : 'Surface equipment'}>
+      {resourceEquipment && <ResourceEquipmentControls equipment={resourceEquipment} session={resourceSession} dispatch={resourceDispatch} />}
       {inspecting.id === 'life-support' && location === 'interior' && <section className="mission-maintenance" aria-live="polite">
         <h3>Filtration: {operational ? 'Operational' : 'Maintenance Required'}</h3>
         <p>{operational ? 'Filter replaced. Repair Tool retained. Mission complete.' : 'Replace the filtration cartridge using the reusable Repair Tool.'}</p>
