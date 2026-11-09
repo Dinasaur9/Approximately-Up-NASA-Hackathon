@@ -3,9 +3,11 @@ import { canWalk } from './world.js'
 import { interactables } from './interactions.js'
 import { collectibles } from './collectibles.js'
 import { rooms, canWalkInterior, selectInteriorInteraction } from './interior.js'
+import { selectGreenhouseInteraction } from './greenhouse.js'
 
 export const MISSION_ID = 'restore-oxygen-filtration'
 export const SOLAR_MISSION_ID = 'restore-solar-power'
+export const NUTRIENT_MISSION_ID = 'greenhouse-nutrient-delivery'
 export const MISSIONS = {
   [MISSION_ID]: {
     id: MISSION_ID, title: 'Mission 01 — Restore Oxygen Filtration',
@@ -36,6 +38,20 @@ export const MISSIONS = {
       { id: 'maintenance', label: 'Complete the solar power maintenance task' },
     ],
   },
+  [NUTRIENT_MISSION_ID]: {
+    id: NUTRIENT_MISSION_ID, title: 'Mission 03 — Greenhouse Nutrient Delivery',
+    description: 'Collect two Nutrient Samples, enter the greenhouse, inspect the Water and Nutrient Station, and deliver the samples. Delivery updates mission state only, without changing food production, battery energy, or simulation time.',
+    requirements: [{ itemId: 'nutrient', quantity: 2, consumed: true }],
+    prerequisites: ['greenhouse', 'station', 'inspect'], completionEvents: ['deliver'],
+    completionMessage: 'Mission complete — Nutrients Replenished. Exactly two Nutrient Samples delivered. Resource food production, battery and time unchanged.',
+    objectives: [
+      { id: 'nutrient', itemId: 'nutrient', quantity: 2, label: 'Obtain two Nutrient Samples' },
+      { id: 'greenhouse', label: 'Enter the greenhouse' },
+      { id: 'station', label: 'Reach the Water and Nutrient Station' },
+      { id: 'inspect', label: 'Inspect the nutrient delivery equipment' },
+      { id: 'deliver', label: 'Deliver two Nutrient Samples' },
+    ],
+  },
 }
 export function createMissionState(id = MISSION_ID) {
   if (!MISSIONS[id]) throw new RangeError('Unknown mission ID.')
@@ -51,7 +67,7 @@ function progress(mission, inventory, events = []) {
   if (mission.status !== 'active') return mission
   const completed = new Set(mission.completedObjectives)
   for (const objective of MISSIONS[mission.id].objectives) {
-    if (objective.itemId && ownsItem(inventory, objective.itemId)) completed.add(objective.id)
+    if (objective.itemId && ownsItem(inventory, objective.itemId, objective.quantity || 1)) completed.add(objective.id)
   }
   events.forEach((id) => completed.add(id))
   const completedObjectives = MISSIONS[mission.id].objectives.filter((o) => completed.has(o.id)).map((o) => o.id)
@@ -90,10 +106,14 @@ export function getInteriorRoom(x, z, doorState) {
   if (!canWalkInterior(x, z, doorState)) return null
   return rooms.find(({ bounds: [left, right, back, front] }) => x >= left && x <= right && z >= back && z <= front)?.id || null
 }
+export function atNutrientStation(x, z) {
+  return selectGreenhouseInteraction(x, z)?.id === 'nutrients'
+}
 export function missingRepairItems(inventory, id = MISSION_ID) {
   return MISSIONS[id].requirements.filter((r) => !ownsItem(inventory, r.itemId, r.quantity)).map((r) => ITEM_TYPES[r.itemId].name)
 }
 function validConsole(state, context, id) {
+  if (id === NUTRIENT_MISSION_ID) return state.currentLocation === 'greenhouse' && context?.location === 'greenhouse' && context.consoleId === 'nutrients' && atNutrientStation(context.x, context.z)
   if (id === SOLAR_MISSION_ID) return state.currentLocation === 'exterior' && context?.location === 'exterior' && context.consoleId === 'solar' && atSolarStation(context.x, context.z)
   return state.currentLocation === 'interior' && context?.location === 'interior' && context.consoleId === 'life-support' &&
     getInteriorRoom(context.x, context.z, context.doorState) === 'life-support' && selectInteriorInteraction(context.x, context.z, context.doorState)?.id === 'life-support'
@@ -133,19 +153,22 @@ export function explorationReducer(state, event) {
     }
     case 'scene-entered': {
       if (!['exterior', 'interior', 'greenhouse'].includes(event.location)) return state
-      return update(state, { ...state, currentLocation: event.location }, event.location === 'interior' ? { [MISSION_ID]: ['habitat'] } : {})
+      return update(state, { ...state, currentLocation: event.location }, event.location === 'interior' ? { [MISSION_ID]: ['habitat'] } : event.location === 'greenhouse' ? { [NUTRIENT_MISSION_ID]: ['greenhouse'] } : {})
     }
     case 'position': {
+      if (state.currentLocation === 'greenhouse' && atNutrientStation(event.x, event.z)) return update(state, state, { [NUTRIENT_MISSION_ID]: ['station'] })
       if (state.currentLocation === 'exterior' && atSolarStation(event.x, event.z)) return update(state, state, { [SOLAR_MISSION_ID]: ['station'] })
       if (state.currentLocation === 'interior' && getInteriorRoom(event.x, event.z, event.doorState) === 'life-support') return update(state, state, { [MISSION_ID]: ['life-support'] })
       return state
     }
     case 'inspect': {
+      if (validConsole(state, event.context, NUTRIENT_MISSION_ID)) return update(state, state, { [NUTRIENT_MISSION_ID]: ['station', 'inspect'] })
       if (!validConsole(state, event.context, SOLAR_MISSION_ID)) return state
       return update(state, state, { [SOLAR_MISSION_ID]: ['station', 'inspect'] })
     }
     case 'repair': return maintain(state, event.context, MISSION_ID)
     case 'install-cell': return maintain(state, event.context, SOLAR_MISSION_ID)
+    case 'deliver-nutrients': return maintain(state, event.context, NUTRIENT_MISSION_ID)
     case 'dismiss-notification': return { ...state, notification: '' }
     default: return state
   }

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { MISSION_ID, SOLAR_MISSION_ID, MISSIONS, createExplorationSession, explorationReducer as reduce, getMissionProgress, canRepairSystem, atSolarStation } from './missions.js'
+import { MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, MISSIONS, createExplorationSession, explorationReducer as reduce, getMissionProgress, canRepairSystem, atSolarStation } from './missions.js'
 import { collectibles, availableCollectibles } from './collectibles.js'
 import { ownsItem, addItem } from './inventory.js'
 import { createDoorState } from './interior.js'
@@ -31,7 +31,7 @@ function freeze(value) {
 
 test('both missions initialize independently and starting recognizes an already collected cell', () => {
   let state = createExplorationSession()
-  assert.deepEqual(Object.keys(state.missions), [MISSION_ID, SOLAR_MISSION_ID])
+  assert.deepEqual(Object.keys(state.missions), [MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID])
   assert.ok(Object.values(state.missions).every((mission) => mission.status === 'not-started'))
   state = pickup(state, 'cell')
   state = reduce(state, { type: 'start' })
@@ -109,12 +109,12 @@ test('both missions can complete in either order without resetting each other', 
   const solar = solarFirst.missions[SOLAR_MISSION_ID]
   solarFirst = oxygenComplete(solarFirst)
   assert.strictEqual(solarFirst.missions[SOLAR_MISSION_ID], solar)
-  assert.ok(Object.values(solarFirst.missions).every((mission) => mission.status === 'completed'))
+  assert.ok([MISSION_ID, SOLAR_MISSION_ID].every((id) => solarFirst.missions[id].status === 'completed'))
   let oxygenFirst = oxygenComplete(active())
   const oxygen = oxygenFirst.missions[MISSION_ID]
   oxygenFirst = reduce(solarReady(oxygenFirst), { type: 'install-cell', context })
   assert.strictEqual(oxygenFirst.missions[MISSION_ID], oxygen)
-  assert.ok(Object.values(oxygenFirst.missions).every((mission) => mission.status === 'completed'))
+  assert.ok([MISSION_ID, SOLAR_MISSION_ID].every((id) => oxygenFirst.missions[id].status === 'completed'))
   for (const state of [solarFirst, oxygenFirst]) {
     assert.equal(ownsItem(state.inventory, 'tool'), true)
     assert.equal(ownsItem(state.inventory, 'filter'), false)

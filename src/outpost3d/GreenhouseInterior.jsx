@@ -17,7 +17,7 @@ function GrowingRack({ x }) {
   </group>
 }
 
-export default function GreenhouseInterior() {
+export default function GreenhouseInterior({ nutrientsReplenished = false }) {
   const [left, right, back, front] = greenhouseBounds
   return <>
     <color attach="background" args={['#0b1916']} />
@@ -37,13 +37,14 @@ export default function GreenhouseInterior() {
       <mesh position={[x, 1.2, -8.5]} castShadow><cylinderGeometry args={[0.65, 0.65, 2.4, 16]} /><meshStandardMaterial color={x < -3 ? '#6fadb9' : '#c1b983'} metalness={0.4} roughness={0.5} /></mesh>
       <Strut from={[x, 0.25, -8.5]} to={[x, 0.25, -7.7]} radius={0.07} color="#5ba3b5" />
     </group>)}
-    <Part position={[-3.5, 0.3, -7.9]} size={[1, 0.6, 0.5]} color="#31596b" /><Beacon position={[-3.5, 0.65, -7.9]} />
+    <Part position={[-3.5, 0.3, -7.9]} size={[1, 0.6, 0.5]} color="#31596b" /><Beacon position={[-3.5, 0.65, -7.9]} color={nutrientsReplenished ? '#7de0b4' : '#ffc16e'} />
     <Part position={[0, 0.65, -8.7]} size={[2.6, 1.3, 1.4]} color="#3d6461" />
     <Part position={[0, 1.7, -9]} size={[2.2, 1, 0.12]} color="#152e2a" />
     <mesh position={[0, 1.7, -8.92]}><planeGeometry args={[1.9, 0.7]} /><meshStandardMaterial color="#6fa897" emissive="#225945" emissiveIntensity={0.5} /></mesh>
     <Label text="ENVIRONMENT / EXHIBIT" position={[0, 2.5, -8.9]} width={2.8} />
     {[2.7, 4.2].map((x) => [0.5, 1.55].map((y) => <Part key={`${x}:${y}`} position={[x, y, -8.5]} size={[1.3, 0.9, 1.4]} color={y < 1 ? '#97a876' : '#b1a67e'} />))}
     <Label text="WATER / NUTRIENTS" position={[-3.5, 3, -9.8]} width={3.3} />
+    <Label text={nutrientsReplenished ? 'NUTRIENTS REPLENISHED' : 'NUTRIENT REFILL REQUIRED'} position={[-3.5, 2.1, -9.8]} width={3} color={nutrientsReplenished ? '#7de0b4' : '#ffc16e'} />
     <Label text="CROP STORAGE" position={[3.5, 3, -9.8]} width={3} />
     <Label text="HYDROPONICS / AGRI 01" position={[0, 3.6, -9.8]} width={4} />
     <Part position={[0, 1.45, 5.8]} size={[2.6, 2.9, 0.15]} color="#263e3c" />

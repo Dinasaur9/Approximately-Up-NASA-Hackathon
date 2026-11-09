@@ -13,7 +13,7 @@ import MissionPanel from './MissionPanel.jsx'
 import MissionEvents from './MissionEvents.jsx'
 import ControlsPanel from './ControlsPanel.jsx'
 import { dismissIntroduction, getExplorationOverlay } from './explorationOverlay.js'
-import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID } from './missions.js'
+import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID } from './missions.js'
 import { ITEM_TYPES } from './inventory.js'
 import { selectGreenhouseInteraction } from './greenhouse.js'
 import { sceneProfiles, transitionDestination, createDoorState, canWalkInterior, selectInteriorInteraction, toggleDoor } from './interior.js'
@@ -49,9 +49,12 @@ export default function LunarExterior({ onBack }) {
   const solarMission = inventorySession.missions[SOLAR_MISSION_ID]
   const solarOperational = solarMission.status === 'completed'
   const solarMissing = missingRepairItems(inventorySession.inventory, SOLAR_MISSION_ID)
+  const nutrientMission = inventorySession.missions[NUTRIENT_MISSION_ID]
+  const nutrientsReplenished = nutrientMission.status === 'completed'
+  const nutrientQuantity = inventorySession.inventory.reduce((sum, slot) => sum + (slot?.itemId === 'nutrient' ? slot.quantity : 0), 0)
   const operational = mission.status === 'completed'
   const missing = missingRepairItems(inventorySession.inventory)
-  const hudMission = Object.values(inventorySession.missions).find((entry) => entry.status !== 'completed') || solarMission
+  const hudMission = Object.values(inventorySession.missions).find((entry) => entry.status !== 'completed') || nutrientMission
   const nextObjective = getMissionProgress(hudMission).find((o) => !o.completed)
   const title = location === 'interior' ? 'Lunar Habitat Interior' : location === 'greenhouse' ? 'Lunar Greenhouse Interior' : 'Lunar Outpost Exterior'
   const interiorWalkable = useCallback((x, z) => canWalkInterior(x, z, doorState), [doorState])
@@ -161,7 +164,7 @@ export default function LunarExterior({ onBack }) {
     <SceneBoundary>
       <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 70, near: 0.1, far: 350 }}
         fallback={<p className="exterior-fallback">WebGL is unavailable. Use a browser with hardware acceleration enabled.</p>}>
-        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior /> : <Environment solarOperational={solarOperational} />}
+        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior nutrientsReplenished={nutrientsReplenished} /> : <Environment solarOperational={solarOperational} />}
         <Collectibles location={location} collectedIds={inventorySession.collectedIds} />
         <Player enterButtonRef={enterButtonRef} onLockChange={onLockChange} onError={onError} paused={blocked} profile={profile} canWalkOverride={location === 'interior' ? interiorWalkable : undefined} />
         <Interactions blocked={blocked} onNearby={setNearby} onInspect={interact} resolveInteraction={resolveInteraction} />
@@ -221,6 +224,19 @@ export default function LunarExterior({ onBack }) {
           <button type="button" disabled={!canRepairSystem(inventorySession, inspectionContext, SOLAR_MISSION_ID)} onClick={() => dispatch({ type: 'install-cell', context: inspectionContext })}>Install Power Cell</button>
         </div>}
         <p className="maintenance-disclaimer">Installation changes mission maintenance state and consumes one inventory cell. The resource simulation’s battery level, solar generation and clock remain unchanged.</p>
+      </section>}
+      {inspecting.id === 'nutrients' && location === 'greenhouse' && <section className="mission-maintenance" aria-live="polite">
+        <h3>{nutrientsReplenished ? 'Nutrients Replenished' : 'Nutrient Refill Required'}</h3>
+        <p>{nutrientsReplenished ? 'Two Nutrient Samples delivered. Mission 03 complete.' : 'Deliver two samples to the greenhouse nutrient station. This training task uses inventory supplies only.'}</p>
+        <div className="maintenance-requirements">
+          <h4>Required supplies</h4>
+          <ul><li><span>Nutrient Sample ×2<small>Consumed on delivery · In inventory: {nutrientQuantity}</small></span><strong>{nutrientsReplenished ? 'Delivered' : nutrientQuantity >= 2 ? 'Available' : 'Missing'}</strong></li></ul>
+        </div>
+        {!nutrientsReplenished && <div className="maintenance-action">
+          {nutrientQuantity < 2 && <p>Need {2 - nutrientQuantity} more Nutrient Sample{2 - nutrientQuantity === 1 ? '' : 's'}. The labeled sample bundle beside the growing racks contains two samples.</p>}
+          <button type="button" disabled={!canRepairSystem(inventorySession, inspectionContext, NUTRIENT_MISSION_ID)} onClick={() => dispatch({ type: 'deliver-nutrients', context: inspectionContext })}>Deliver Nutrients</button>
+        </div>}
+        <p className="maintenance-disclaimer">Delivery changes mission state and consumes exactly two inventory samples. The resource model’s food production, battery level and simulation time remain unchanged.</p>
       </section>}
     </EquipmentPanel>}
     {inventoryOpen && <InventoryPanel inventory={inventorySession.inventory} onClose={closeInventory} />}
