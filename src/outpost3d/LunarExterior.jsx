@@ -1,4 +1,4 @@
-import { Component, useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import Environment from './Environment.jsx'
 import Player from './Player.jsx'
@@ -14,6 +14,7 @@ import MissionEvents from './MissionEvents.jsx'
 import ControlsPanel from './ControlsPanel.jsx'
 import ResourceTerminal from './ResourceTerminal.jsx'
 import { createResourceSession, resourceSessionReducer } from '../outpost/session.js'
+import { getResourceVisuals } from './resourceVisuals.js'
 import { dismissIntroduction, getExplorationOverlay } from './explorationOverlay.js'
 import { createExplorationSession, explorationReducer, canRepairSystem, missingRepairItems, getMissionProgress, MISSIONS, MISSION_ID, SOLAR_MISSION_ID, NUTRIENT_MISSION_ID, SPACECRAFT_MISSION_ID, canRecordInspection, canSubmitChecklist } from './missions.js'
 import { spacecraftInspections } from './spacecraft.js'
@@ -40,6 +41,7 @@ export default function LunarExterior({ onBack }) {
   const [helpOpen, setHelpOpen] = useState(false)
   const [resourceOpen, setResourceOpen] = useState(false)
   const [resourceSession, resourceDispatch] = useReducer(resourceSessionReducer, undefined, createResourceSession)
+  const resourceVisuals = useMemo(() => getResourceVisuals(resourceSession), [resourceSession])
   const panelGate = useRef(null)
   const [location, setLocation] = useState('exterior')
   const [profile, setProfile] = useState(sceneProfiles.initial)
@@ -180,7 +182,7 @@ export default function LunarExterior({ onBack }) {
     <SceneBoundary>
       <Canvas shadows dpr={[1, 1.5]} camera={{ fov: 70, near: 0.1, far: 350 }}
         fallback={<p className="exterior-fallback">WebGL is unavailable. Use a browser with hardware acceleration enabled.</p>}>
-        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} /> : location === 'greenhouse' ? <GreenhouseInterior nutrientsReplenished={nutrientsReplenished} /> : <Environment solarOperational={solarOperational} spacecraftObjectives={spacecraftMission.completedObjectives} />}
+        {location === 'interior' ? <HabitatInterior doorState={doorState} filtrationOperational={operational} resourceVisuals={resourceVisuals} /> : location === 'greenhouse' ? <GreenhouseInterior nutrientsReplenished={nutrientsReplenished} resourceVisuals={resourceVisuals} /> : <Environment solarOperational={solarOperational} spacecraftObjectives={spacecraftMission.completedObjectives} resourceVisuals={resourceVisuals} />}
         <Collectibles location={location} collectedIds={inventorySession.collectedIds} />
         <Player enterButtonRef={enterButtonRef} onLockChange={onLockChange} onError={onError} paused={blocked} profile={profile} canWalkOverride={location === 'interior' ? interiorWalkable : undefined} />
         <Interactions blocked={blocked} onNearby={setNearby} onInspect={interact} resolveInteraction={resolveInteraction} />
@@ -279,6 +281,9 @@ export default function LunarExterior({ onBack }) {
     {transition && <div className={`habitat-transition habitat-transition-${transition.phase}`} role="status">Cycling airlock… {transition.destination === 'interior' ? 'Entering habitat' : transition.destination === 'greenhouse' ? 'Entering greenhouse' : 'Returning to lunar surface'}</div>}
     <footer className="exterior-instructions">{locked ? 'EXPLORING' : 'PAUSED'} · WASD walk · Mouse look · Shift faster · E interact · I inventory · M missions · H help · Esc release<br />
       {MISSIONS[hudMission.id].title}: {nextObjective?.label || 'All missions completed'} · {hudMission.status.replaceAll('-', ' ')}<br />
+      <span className="resource-visual-summary">{resourceVisuals.basis} H{resourceVisuals.hour} · {resourceVisuals.environment.sunlight ? 'Sunlight' : 'Darkness'} · Food power: {resourceVisuals.food.status}
+        {' '}· Battery {resourceVisuals.battery.kWh.toFixed(1)} kWh{resourceVisuals.battery.low ? ' LOW' : ''} · O₂ {resourceVisuals.oxygen.kg.toFixed(2)} kg{resourceVisuals.oxygen.low ? ' LOW' : ''}{resourceVisuals.storm ? ' · RADIATION STORM' : ''}<br />
+        Last completed hour food power: {resourceVisuals.food.lastDeliveredKWh === null ? 'no turn yet' : `${resourceVisuals.food.lastDeliveredKWh.toFixed(2)} / ${resourceVisuals.food.lastRequestedKWh.toFixed(2)} kWh delivered / requested`}</span><br />
       {location === 'interior' ? 'Habitat 01 / Interior' : location === 'greenhouse' ? 'Greenhouse 01 / Interior' : 'Lunar surface / Exterior'} · Resource simulation runs separately</footer>
   </section>
 }

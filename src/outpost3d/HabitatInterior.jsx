@@ -1,5 +1,6 @@
 import { Part, Label, Beacon, Strut } from './Equipment.jsx'
 import { INTERIOR_HEIGHT, rooms, interiorWalls, doors, doorBounds } from './interior.js'
+import { RESOURCE_COLORS } from './resourceVisuals.js'
 
 function Wall({ position, size }) {
   return <Part position={position} size={size} color="#8b9ba5" />
@@ -16,17 +17,19 @@ function Console({ x, z, rotation = 0, statusColor = '#80e9dc' }) {
   </group>
 }
 
-export default function HabitatInterior({ doorState, filtrationOperational = false }) {
+export default function HabitatInterior({ doorState, filtrationOperational = false, resourceVisuals }) {
+  const lightingScale = resourceVisuals?.habitat.lightingScale ?? 1
   return <>
     <color attach="background" args={['#0c1420']} />
-    <ambientLight intensity={0.65} />
-    <hemisphereLight args={['#c9e4ff', '#344151', 0.8]} />
+    <ambientLight intensity={0.65 * lightingScale} />
+    <hemisphereLight args={['#c9e4ff', '#344151', 0.8 * lightingScale]} />
     {rooms.map(({ id, name, bounds: [left, right, back, front] }) => {
       const x = (left + right) / 2, z = (back + front) / 2
       return <group key={id}>
         <Part position={[x, -0.12, z]} size={[right - left, 0.24, front - back]} color="#354653" />
         <Part position={[x, INTERIOR_HEIGHT + 0.1, z]} size={[right - left, 0.2, front - back]} color="#465967" />
-        <pointLight position={[x, 3.1, z]} intensity={20} distance={11} decay={2} />
+        <pointLight position={[x, 3.1, z]} intensity={20 * lightingScale} distance={11} decay={2} />
+        {resourceVisuals?.habitat.warning && <Beacon position={[x + 0.9, 3.2, z]} color={RESOURCE_COLORS.warning} />}
         <Part position={[x, 3.45, z]} size={[1.6, 0.08, 0.4]} color="#d7edff" />
         <Label text={name} position={[x, 2.9, back + 0.14]} width={id === 'mission-control' ? 3.8 : 3} />
       </group>
@@ -50,6 +53,10 @@ export default function HabitatInterior({ doorState, filtrationOperational = fal
     <group position={[-7.2, 2.7, -1.7]} rotation={[0, Math.PI / 2, 0]}>
       <Label text={filtrationOperational ? 'FILTRATION / OPERATIONAL' : 'FILTRATION / MAINTENANCE'} position={[0, 0, 0]} width={2.3} color={filtrationOperational ? '#7de0b4' : '#ffc16e'} />
     </group>
+    {resourceVisuals?.oxygen.low && <group position={[-7.2, 1.95, -1.7]} rotation={[0, Math.PI / 2, 0]}>
+      <Label text="WARNING / O2 RESERVE LOW" position={[0, 0, 0]} width={2.3} color={RESOURCE_COLORS.warning} />
+    </group>}
+    {resourceVisuals?.habitat.warning && <Label text={resourceVisuals.battery.low ? 'LOW BATTERY' : 'PLAN / LOW POWER'} position={[3.3, 2.6, -12.4]} width={1.3} color={RESOURCE_COLORS.warning} />}
     {[-4.6, -3.5].map((z) => <group key={z}>
       <mesh position={[-8, 1.2, z]} castShadow><cylinderGeometry args={[0.42, 0.42, 2.4, 12]} /><meshStandardMaterial color="#aebec6" metalness={0.65} roughness={0.4} /></mesh>
       <Strut from={[-8, 2.5, z]} to={[-7.2, 2.5, z]} radius={0.09} />

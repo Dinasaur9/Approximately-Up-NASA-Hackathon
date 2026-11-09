@@ -5,8 +5,9 @@ import Structures from './Structures.jsx'
 import Equipment from './Equipment.jsx'
 import LandedSpacecraft from './LandedSpacecraft.jsx'
 import { groundHeight, canWalk } from './world.js'
+import { Label } from './Equipment.jsx'
 
-export default function Environment({ solarOperational = false, spacecraftObjectives = [] }) {
+export default function Environment({ solarOperational = false, spacecraftObjectives = [], resourceVisuals }) {
   const terrain = useMemo(() => {
     const geometry = new PlaneGeometry(190, 190, 180, 180)
     geometry.rotateX(-Math.PI / 2)
@@ -34,11 +35,12 @@ export default function Environment({ solarOperational = false, spacecraftObject
       <icosahedronGeometry args={[1, 0]} /><meshStandardMaterial color={i % 2 ? '#626565' : '#96948d'} roughness={1} />
     </mesh>)}
     <Structures />
-    <Equipment solarOperational={solarOperational} />
+    <Equipment solarOperational={solarOperational} resourceVisuals={resourceVisuals} />
+    {resourceVisuals?.storm && <Label text="RADIATION STORM / SHELTER" position={[0, 3.6, -0.65]} width={3} color="#ffc16e" />}
     <LandedSpacecraft recorded={spacecraftObjectives} />
     {Array.from({ length: 7 }, (_, i) => <group key={i} position={[i % 2 ? -2.5 : 2.5, groundHeight(0, i * 2), i * 2]}>
       <mesh position={[0, 0.25, 0]}><cylinderGeometry args={[0.045, 0.06, 0.5, 6]} /><meshStandardMaterial color="#a0a8b5" /></mesh>
-      <mesh position={[0, 0.52, 0]}><sphereGeometry args={[0.075, 8, 8]} /><meshStandardMaterial color="#7ed5ee" emissive="#43b8dd" emissiveIntensity={2} /></mesh>
+      <mesh position={[0, 0.52, 0]}><sphereGeometry args={[0.075, 8, 8]} /><meshStandardMaterial color={resourceVisuals?.storm ? '#ffc16e' : '#7ed5ee'} emissive={resourceVisuals?.storm ? '#e09b42' : '#43b8dd'} emissiveIntensity={resourceVisuals?.storm ? 2 : 1} /></mesh>
     </group>)}
   </>
 }

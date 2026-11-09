@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { CanvasTexture, Vector3, Quaternion } from 'three'
 import { groundHeight } from './world.js'
+import { RESOURCE_COLORS } from './resourceVisuals.js'
 
 export function Part({ position, size, color = '#bcc3c7', ...props }) {
   return <mesh position={position} castShadow receiveShadow {...props}><boxGeometry args={size} /><meshStandardMaterial color={color} metalness={0.6} roughness={0.45} /></mesh>
@@ -34,7 +35,7 @@ export function Beacon({ position, color = '#80e9dc' }) {
   return <mesh position={position}><sphereGeometry args={[0.075, 8, 8]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} /></mesh>
 }
 
-export default function Equipment({ solarOperational = false }) {
+export default function Equipment({ solarOperational = false, resourceVisuals }) {
   return <>
     <group position={[7, groundHeight(7, 0), 0]}>
       <Part position={[0, 1, 0]} size={[2, 2, 2]} color="#b9c7cb" />
@@ -45,8 +46,10 @@ export default function Equipment({ solarOperational = false }) {
       <Beacon position={[0.7, 1.7, 1.12]} />
     </group>
     <group position={[-15, groundHeight(-15, 3), 3]}>
-      {[-1.3, 0, 1.3].map((x) => <group key={x}><Part position={[x, 0.75, 0]} size={[1, 1.5, 1.2]} color="#354c68" /><Part position={[x, 0.75, 0.62]} size={[0.65, 0.8, 0.06]} color="#17232f" /><Beacon position={[x, 1.25, 0.68]} color={solarOperational ? '#7de0b4' : '#ffc16e'} /></group>)}
-      <Label text="POWER / BATTERY BANK" position={[0, 1.9, 0.7]} width={3} />
+      {[-1.3, 0, 1.3].map((x) => <group key={x}><Part position={[x, 0.75, 0]} size={[1, 1.5, 1.2]} color="#354c68" /><Part position={[x, 0.75, 0.62]} size={[0.65, 0.8, 0.06]} color="#17232f" /><Beacon position={[x, 1.25, 0.68]} color={resourceVisuals?.solar.generating ? RESOURCE_COLORS.normal : RESOURCE_COLORS.standby} /></group>)}
+      <Label text="POWER / BATTERY BANK" position={[0, 0.8, 0.66]} width={1.6} />
+      {/* Maintenance status stays separate from the generation lights above. */}
+      <Beacon position={[0, 0.2, 0.68]} color={solarOperational ? RESOURCE_COLORS.normal : RESOURCE_COLORS.warning} />
     </group>
     <group position={[20, groundHeight(20, 4), 4]}>
       <Part position={[0, 0.4, 0]} size={[3, 0.8, 2]} color="#7a838d" />
@@ -55,6 +58,7 @@ export default function Equipment({ solarOperational = false }) {
       <Strut from={[0, 4, 0]} to={[0, 5.3, 0.8]} radius={0.045} />
       <Beacon position={[0, 5.3, 0.8]} color="#ff965b" />
       <Label text="COMMS / RELAY 01" position={[0, 1.1, 1.05]} width={2.6} />
+      {resourceVisuals?.storm && <Label text="RADIATION / SEEK SHELTER" position={[0, 1.9, 1.05]} width={2.6} color={RESOURCE_COLORS.warning} />}
     </group>
     <group position={[-7, groundHeight(-7, 6), 6]}>
       {[-1.4, 0, 1.4].map((x, i) => <group key={x}><Part position={[x, 0.65, 0]} size={[1.25, 1.3, 1.8]} color={i === 1 ? '#ac8550' : '#7d878c'} />{[-0.4, 0.4].map((offset) => <Part key={offset} position={[x + offset, 0.65, 0.92]} size={[0.09, 1.3, 0.04]} color="#29323c" />)}</group>)}

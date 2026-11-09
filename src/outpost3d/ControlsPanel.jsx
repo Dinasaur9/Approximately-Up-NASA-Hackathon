@@ -16,6 +16,7 @@ export default function ControlsPanel({ onClose }) {
     </dl>
     <p>Inspect the habitat or greenhouse entrance and choose Enter. Mission 01 requires the Repair Tool and Replacement Oxygen Filter at the habitat Life-Support Console.</p>
     <p className="equipment-note">Closing a panel preserves your view. Click the compact resume prompt to recapture the mouse. Desktop keyboard and mouse required.</p>
+    <p className="equipment-note">Resource indicators show the next hour’s model preview, labeled PLAN. They do not advance time. Reserve warnings use stored battery ≤3.6 kWh and oxygen ≤0.64 kg. Dim lighting is a visual warning only; it does not save simulated power. Last completed greenhouse power is shown separately in the HUD.</p>
     <button type="button" autoFocus onClick={onClose}>Close Help</button>
   </dialog>
 }

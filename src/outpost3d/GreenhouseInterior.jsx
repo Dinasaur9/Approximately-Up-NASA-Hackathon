@@ -1,7 +1,8 @@
 import { Part, Label, Beacon, Strut } from './Equipment.jsx'
 import { greenhouseBounds, greenhouseEquipment, GREENHOUSE_HEIGHT } from './greenhouse.js'
+import { RESOURCE_COLORS } from './resourceVisuals.js'
 
-function GrowingRack({ x }) {
+function GrowingRack({ x, growLightFraction = 0 }) {
   return <group position={[x, 0, -3]}>
     {[-0.95, 0.95].flatMap((dx) => [-3.8, 3.8].map((z) => <Part key={`${dx}:${z}`} position={[dx, 1.8, z]} size={[0.08, 3.6, 0.08]} color="#b1bfbc" />))}
     {[0.65, 2.1].map((y) => <group key={y}>
@@ -9,7 +10,7 @@ function GrowingRack({ x }) {
       {[-0.55, 0.55].map((dx) => <group key={dx}>
         <Part position={[dx, y + 0.12, 0]} size={[0.48, 0.14, 7.6]} color="#334b40" />
         {[-0.24, 0.24].map((edge) => <Part key={edge} position={[dx + edge, y + 0.21, 0]} size={[0.035, 0.14, 7.6]} color="#a1b4aa" />)}
-        <mesh position={[dx, y + 1.1, 0]}><boxGeometry args={[0.18, 0.055, 7.5]} /><meshStandardMaterial color="#eef0e5" emissive="#c6bcdb" emissiveIntensity={0.6} /></mesh>
+        <mesh position={[dx, y + 1.1, 0]}><boxGeometry args={[0.18, 0.055, 7.5]} /><meshStandardMaterial color={growLightFraction > 0 ? '#eef0e5' : '#53615e'} emissive="#c6bcdb" emissiveIntensity={0.6 * growLightFraction} /></mesh>
       </group>)}
       {Array.from({ length: 12 }, (_, i) => {
         const stage = Math.floor(i / 4)
@@ -33,8 +34,11 @@ function GrowingRack({ x }) {
   </group>
 }
 
-export default function GreenhouseInterior({ nutrientsReplenished = false }) {
+export default function GreenhouseInterior({ nutrientsReplenished = false, resourceVisuals }) {
   const [left, right, back, front] = greenhouseBounds
+  const food = resourceVisuals?.food
+  const foodLabels = { off: 'PLAN / FOOD OFF', powered: 'PLAN / FOOD POWERED', partial: 'PLAN / PARTIAL FOOD POWER', unpowered: 'PLAN / NO FOOD POWER', shelter: 'PLAN / SHELTER MODE', ended: 'SIMULATION ENDED' }
+  const foodColor = food?.status === 'powered' ? RESOURCE_COLORS.normal : ['partial', 'unpowered'].includes(food?.status) ? RESOURCE_COLORS.warning : RESOURCE_COLORS.standby
   return <>
     <color attach="background" args={['#0b1916']} />
     <ambientLight intensity={0.7} />
@@ -48,11 +52,12 @@ export default function GreenhouseInterior({ nutrientsReplenished = false }) {
       <Part position={[0, 4.2, z]} size={[12, 0.15, 0.18]} color="#b3c5be" />
       <Part position={[0, 0.015, z]} size={[0.12, 0.02, 1]} color="#a5d5b2" />
     </group>)}
-    <GrowingRack x={-3.9} /><GrowingRack x={3.9} />
+    <GrowingRack x={-3.9} growLightFraction={food?.poweredFraction ?? 0} /><GrowingRack x={3.9} growLightFraction={food?.poweredFraction ?? 0} />
     {/* One sign per workstation, facing the approach and above its equipment. */}
     <Label text="HYDROPONIC GROWING AREA" position={[-3.9, 3.95, 1.08]} width={3.6} />
     <Label text="WATER / NUTRIENT STATION" position={[-3.5, 3.1, -7.7]} width={2.8} color="#a5d4df" />
     <Label text="ENVIRONMENTAL CONTROL" position={[0, 3.1, -8.05]} width={2.5} />
+    <Label text={foodLabels[food?.status] || 'PLAN / FOOD OFF'} position={[0, 3.75, -8.05]} width={2.3} color={foodColor} />
     <Label text="CROP STORAGE AREA" position={[3.5, 3.1, -7.7]} width={2.8} color="#ded3aa" />
     {/* Recessed equipment bays distinguish the three rear workstations. */}
     <Part position={[-3.5, 1.5, -9.25]} size={[2.9, 3, 0.1]} color="#345661" />
@@ -70,7 +75,7 @@ export default function GreenhouseInterior({ nutrientsReplenished = false }) {
     <Part position={[0, 1.7, -9]} size={[2.2, 1, 0.12]} color="#152e2a" />
     <mesh position={[0, 1.7, -8.92]}><planeGeometry args={[1.9, 0.7]} /><meshStandardMaterial color="#6fa897" emissive="#225945" emissiveIntensity={0.5} /></mesh>
     <Part position={[0, 1.3, -8.9]} size={[2.2, 0.12, 0.2]} color="#c2d2cb" />
-    <Beacon position={[1.05, 1.6, -8.9]} color="#9bc3d0" />
+    <Beacon position={[1.05, 1.6, -8.9]} color={foodColor} />
     {[2.7, 4.2].map((x) => [0.5, 1.55].map((y) => <group key={`${x}:${y}`}>
       <Part position={[x, y, -8.5]} size={[1.3, 0.9, 1.4]} color={y < 1 ? '#97a876' : '#b1a67e'} />
       <Part position={[x, y + 0.3, -7.78]} size={[1.2, 0.07, 0.03]} color="#37483b" />
